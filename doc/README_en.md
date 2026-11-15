@@ -1,16 +1,16 @@
-<img src="https://raw.githubusercontent.com/NetZhizni/ha-dtek-krem-outages/main/custom_components/dtek_krem_outages/brand/icon.png" alt="DTEK KREM Outages" width="96" align="right">
+<img src="https://raw.githubusercontent.com/ra1phdd/ha-dtek-dem-outages/main/custom_components/dtek_dem_outages/brand/icon.png" alt="DTEK DEM Outages" width="96" align="right">
 
-# DTEK KREM Outages
+# DTEK DEM Outages
 
 [![HACS Default](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://hacs.xyz/)
-[![Validate](https://github.com/NetZhizni/ha-dtek-krem-outages/actions/workflows/validate.yml/badge.svg)](https://github.com/NetZhizni/ha-dtek-krem-outages/actions/workflows/validate.yml)
-[![Tests](https://github.com/NetZhizni/ha-dtek-krem-outages/actions/workflows/tests.yml/badge.svg)](https://github.com/NetZhizni/ha-dtek-krem-outages/actions/workflows/tests.yml)
+[![Validate](https://github.com/ra1phdd/ha-dtek-dem-outages/actions/workflows/validate.yml/badge.svg)](https://github.com/ra1phdd/ha-dtek-dem-outages/actions/workflows/validate.yml)
+[![Tests](https://github.com/ra1phdd/ha-dtek-dem-outages/actions/workflows/tests.yml/badge.svg)](https://github.com/ra1phdd/ha-dtek-dem-outages/actions/workflows/tests.yml)
 
 [Українська](../README.md) | **English**
 
-Home Assistant integration for the power outage schedules of [DTEK Kyiv Regional Electric Networks](https://www.dtek-krem.com.ua/ua/shutdowns) (DTEK KREM, Kyiv region). It shows your group, the schedule for today and tomorrow and the outages reported for your address, and fires events when the schedule changes or an outage is about to start.
+Home Assistant integration for current outage information from [DTEK Donetsk Electric Networks](https://www.dtek-dem.com.ua/ua/shutdowns) (DTEK DEM, Donetsk region). It asks for a settlement, street and house number and shows outages reported for that address. DTEK DEM does not publish hourly schedules: if the address is absent from `data`, the integration treats power as available.
 
-> Data provided by [DTEK KREM](https://www.dtek-krem.com.ua/ua/shutdowns). This project is not affiliated with DTEK.
+> Data provided by [DTEK DEM](https://www.dtek-dem.com.ua/ua/shutdowns). This project is not affiliated with DTEK.
 
 ## What it is
 
@@ -27,15 +27,15 @@ The schedule changes often, sometimes several times a day. So the integration:
 
 ## What it looks like
 
-<img src="https://raw.githubusercontent.com/NetZhizni/ha-dtek-krem-outages/main/doc/images/dashboard.png" alt="Markdown, Entities and Calendar cards with the integration's data" width="640">
+<img src="https://raw.githubusercontent.com/ra1phdd/ha-dtek-dem-outages/main/doc/images/dashboard.png" alt="Markdown, Entities and Calendar cards with the integration's data" width="640">
 
 Setup: settlement → street → house, the same as on the DTEK site.
 
-<img src="https://raw.githubusercontent.com/NetZhizni/ha-dtek-krem-outages/main/doc/images/setup.gif" alt="Adding the integration: choosing the settlement, street and house" width="400">
+<img src="https://raw.githubusercontent.com/ra1phdd/ha-dtek-dem-outages/main/doc/images/setup.gif" alt="Adding the integration: choosing the settlement, street and house" width="400">
 
 | Device | Calendar |
 |---|---|
-| <img src="https://raw.githubusercontent.com/NetZhizni/ha-dtek-krem-outages/main/doc/images/device.png" alt="Device page with the sensors" width="380"> | <img src="https://raw.githubusercontent.com/NetZhizni/ha-dtek-krem-outages/main/doc/images/calendar.png" alt="Outage calendar with an event" width="480"> |
+| <img src="https://raw.githubusercontent.com/ra1phdd/ha-dtek-dem-outages/main/doc/images/device.png" alt="Device page with the sensors" width="380"> | <img src="https://raw.githubusercontent.com/ra1phdd/ha-dtek-dem-outages/main/doc/images/calendar.png" alt="Outage calendar with an event" width="480"> |
 
 Screenshots are from a Home Assistant instance with the Ukrainian UI.
 
@@ -43,7 +43,7 @@ Screenshots are from a Home Assistant instance with the Ukrainian UI.
 
 | Source | What | When |
 |---|---|---|
-| [dtek-krem.com.ua](https://www.dtek-krem.com.ua/ua/shutdowns) | Houses of your street with their group and current outage, the actual schedule (`fact`), the weekly schedule (`preset`) and the flags telling what of it the page shows | Every update |
+| [dtek-dem.com.ua](https://www.dtek-dem.com.ua/ua/shutdowns) | Houses of your street with their group and current outage, the actual schedule (`fact`), the weekly schedule (`preset`) and the flags telling what of it the page shows | Every update |
 | [Baskerville42/outage-data-ua](https://github.com/Baskerville42/outage-data-ua) (public mirror of the same `fact`/`preset`, updated about every 5 min) | Schedule only, no address data | Only when DTEK fails, and only if its version is newer; always for an entry without an address |
 
 The DTEK pages are behind an anti-bot JavaScript challenge, but the endpoint the shutdowns page loads its data from (`POST /ua/ajax`) is not. The integration uses that endpoint like the page does: with the site's CSRF token, one request per entry per update and an honest User-Agent. It sends the version it already has, and DTEK includes the schedule only when there is a newer one, so most answers are a few kilobytes. The integration does not get around the anti-bot challenge and does not pretend to be a browser.
@@ -58,35 +58,35 @@ After a failed request the update interval doubles (5 → 10 → 15 min by defau
 
 ### Method 1: [HACS](https://hacs.xyz/) (recommended)
 
-[![Open your Home Assistant instance and open the DTEK KREM Outages repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=NetZhizni&repository=ha-dtek-krem-outages&category=integration)
+[![Open your Home Assistant instance and open the DTEK DEM Outages repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ra1phdd&repository=ha-dtek-dem-outages&category=integration)
 
 Or find it in HACS yourself, there's no need to add the repository by hand:
 
-1. Open HACS, type **DTEK KREM Outages** in the search box → open it → **Download**.
+1. Open HACS, type **DTEK DEM Outages** in the search box → open it → **Download**.
 2. Restart Home Assistant.
 
 ### Method 2: Git clone from GitHub
 
 ```bash
 cd /config
-git clone https://github.com/NetZhizni/ha-dtek-krem-outages.git
+git clone https://github.com/ra1phdd/ha-dtek-dem-outages.git
 mkdir -p custom_components
-cp -r ha-dtek-krem-outages/custom_components/dtek_krem_outages custom_components/
+cp -r ha-dtek-dem-outages/custom_components/dtek_dem_outages custom_components/
 ```
 
 Restart Home Assistant afterwards. To switch to a release later, `git fetch --tags && git checkout <version>` in the clone and copy the folder again.
 
 ### Method 3: Manual installation via [Samba](https://github.com/home-assistant/addons/tree/master/samba) / [FTPS](https://github.com/hassio-addons/addon-ftp)
 
-1. Download the latest release from [Releases](https://github.com/NetZhizni/ha-dtek-krem-outages/releases).
-2. Copy `custom_components/dtek_krem_outages` into `config/custom_components`.
+1. Download the latest release from [Releases](https://github.com/ra1phdd/ha-dtek-dem-outages/releases).
+2. Copy `custom_components/dtek_dem_outages` into `config/custom_components`.
 3. Restart Home Assistant.
 
 ## Configuration
 
-[![Open your Home Assistant instance and start setting up a new DTEK KREM Outages integration instance.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=dtek_krem_outages)
+[![Open your Home Assistant instance and start setting up a new DTEK DEM Outages integration instance.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=dtek_dem_outages)
 
-**Settings → Devices & services → Add integration → DTEK KREM Outages**, then:
+**Settings → Devices & services → Add integration → DTEK DEM Outages**, then:
 
 1. **Settlement**: start typing, e.g. `Бориспіль`. The list is the one DTEK uses (about 1200 settlements).
 2. **Street**: villages without street names have `Без вулиці`. DTEK lists some places under several spellings (`с. Софіївська Борщагівка` and `Софіївська Борщагівка`). The streets of all of them are shown, the ones of another spelling with it in brackets, so the settlement you picked does not matter.
@@ -123,11 +123,11 @@ How to set it up:
 
 1. Nothing is needed to see the other groups: they appear in the `…_other_groups` calendar (in the **Calendar** side panel, "Entry name Other groups", e.g. "Home Інші черги" with Ukrainian names) as soon as DTEK lists them. Tick both calendars to see the main and the other groups together:
 
-   <img src="https://raw.githubusercontent.com/NetZhizni/ha-dtek-krem-outages/main/doc/images/other-groups-calendar.png" alt="Calendar: events of the main group and of group 5.1 side by side" width="480">
+   <img src="https://raw.githubusercontent.com/ra1phdd/ha-dtek-dem-outages/main/doc/images/other-groups-calendar.png" alt="Calendar: events of the main group and of group 5.1 side by side" width="480">
 
-2. For the sensors and warnings to follow the other groups: **Settings → Devices & services → DTEK KREM Outages →** the cog next to the entry. At the bottom of the form, in **"Other groups of the address in the schedule"**, choose the mode and press **Submit**; the entry reloads by itself.
+2. For the sensors and warnings to follow the other groups: **Settings → Devices & services → DTEK DEM Outages →** the cog next to the entry. At the bottom of the form, in **"Other groups of the address in the schedule"**, choose the mode and press **Submit**; the entry reloads by itself.
 
-   <img src="https://raw.githubusercontent.com/NetZhizni/ha-dtek-krem-outages/main/doc/images/groups-options.png" alt="Options: the &quot;Other groups of the address in the schedule&quot; mode and &quot;Leave out groups&quot;" width="480">
+   <img src="https://raw.githubusercontent.com/ra1phdd/ha-dtek-dem-outages/main/doc/images/groups-options.png" alt="Options: the &quot;Other groups of the address in the schedule&quot; mode and &quot;Leave out groups&quot;" width="480">
 
 3. If a group doesn't concern you, add it to **"Leave out groups"** in the same form.
 
@@ -208,7 +208,7 @@ The history survives restarts and is in `address_history` of the `get_schedule` 
 
 ## Events
 
-Every event is fired on the bus as `dtek_krem_outages_event` with `type`, and on the event entity with the same data.
+Every event is fired on the bus as `dtek_dem_outages_event` with `type`, and on the event entity with the same data.
 
 Every event has `type`, `group` (`GPV3.1`), `group_name` (`3.1`), `settlement`, `street`, `house` (`null` for an entry without an address), `config_entry_id`, `entry_title`, plus:
 
@@ -238,8 +238,8 @@ Rules:
 
 | Service | Description |
 |---|---|
-| `dtek_krem_outages.refresh` | Update now. `config_entry_id` is optional; fails when no source answered. An entry updated less than a minute ago doesn't ask DTEK again: the call gives the result of that update, so calling it often from an automation doesn't flood DTEK |
-| `dtek_krem_outages.get_schedule` | Returns `{entries: [{group, extra_groups, groups_mode, days: {date: {outages, outages_text, outage_minutes, possible, schedule}}, weekly, groups: {GPV3.1: {group_name, days, weekly}, ...}, address_outage, address_history, source, connection, data_status, publication, ...}]}`. `days` and `weekly` are the schedule the entities show, `groups` has every group alone, `address_history` the outages of the address DTEK no longer shows (7 days) |
+| `dtek_dem_outages.refresh` | Update now. `config_entry_id` is optional; fails when no source answered. An entry updated less than a minute ago doesn't ask DTEK again: the call gives the result of that update, so calling it often from an automation doesn't flood DTEK |
+| `dtek_dem_outages.get_schedule` | Returns `{entries: [{group, extra_groups, groups_mode, days: {date: {outages, outages_text, outage_minutes, possible, schedule}}, weekly, groups: {GPV3.1: {group_name, days, weekly}, ...}, address_outage, address_history, source, connection, data_status, publication, ...}]}`. `days` and `weekly` are the schedule the entities show, `groups` has every group alone, `address_history` the outages of the address DTEK no longer shows (7 days) |
 
 ## Examples
 
@@ -253,11 +253,11 @@ The integration gives the times in its attributes in Kyiv time with the offset (
 alias: "Outage schedule → Telegram"
 triggers:
   - trigger: event
-    event_type: dtek_krem_outages_event
+    event_type: dtek_dem_outages_event
     event_data:
       type: schedule_published
   - trigger: event
-    event_type: dtek_krem_outages_event
+    event_type: dtek_dem_outages_event
     event_data:
       type: schedule_changed
 actions:
@@ -284,7 +284,7 @@ Tick the times in the options (e.g. 30 and 5 minutes before the start); `minutes
 alias: "Outage soon → phone"
 triggers:
   - trigger: event
-    event_type: dtek_krem_outages_event
+    event_type: dtek_dem_outages_event
     event_data:
       type: outage_warning
 conditions:
@@ -309,7 +309,7 @@ mode: queued
 alias: "Emergency outage at home"
 triggers:
   - trigger: event
-    event_type: dtek_krem_outages_event
+    event_type: dtek_dem_outages_event
     event_data:
       type: address_outage
 conditions:
@@ -409,7 +409,7 @@ content: |
   ⚠️ No connection to DTEK, showing the stored schedule
   {%- endif %}
 
-  <sub>Data: DTEK KREM, updated {{ state_attr('sensor.home_schedule_updated', 'version') or 'unknown' }}</sub>
+  <sub>Data: DTEK DEM, updated {{ state_attr('sensor.home_schedule_updated', 'version') or 'unknown' }}</sub>
 ```
 
 Emergency works, planned works and other outages DTEK reports for the house get a 🚧 line of their own while they last or when they are still ahead. Stabilization outages are left out there: the schedule already has them. An entry without an address has no `sensor.home_address_status`, and the line just stays empty.
@@ -506,8 +506,8 @@ The marks are on the second line of the template; `'🟡', '🔶', '⚫'` work t
 
 | What you see | What to do |
 |---|---|
-| The integration is not in the list | Restart Home Assistant. Check that `manifest.json` is right in `config/custom_components/dtek_krem_outages/` |
-| Your settlement, street or house is missing | Check the address on [dtek-krem.com.ua](https://www.dtek-krem.com.ua/ua/shutdowns): the list is the same. Kyiv city is served by another operator (DTEK KEM / Yasno) |
+| The integration is not in the list | Restart Home Assistant. Check that `manifest.json` is right in `config/custom_components/dtek_dem_outages/` |
+| Your settlement, street or house is missing | Check the address on [dtek-dem.com.ua](https://www.dtek-dem.com.ua/ua/shutdowns): the list is the same. Kyiv city is served by another operator (DTEK KEM / Yasno) |
 | "DTEK is unavailable" while adding | Try again later, or add the entry by group only and the address later with **Reconfigure** |
 | `sensor.…_dtek_connection` shows `mirror` or `offline` | DTEK is not answering right now; `blocked: true` means it answered with the anti-bot challenge. The integration retries by itself, at most every 15 min. Don't remove and re-add the entry: the stored schedule keeps working anyway |
 | No possible outages in the calendar | DTEK doesn't show the weekly schedule right now (`weekly_schedule_shown: false` on `sensor.…_dtek_connection`), or the "Show possible outages" option is off |
@@ -519,7 +519,7 @@ The marks are on the second line of the template; `'🟡', '🔶', '⚫'` work t
 
 ## Diagnostics
 
-**Devices & services → DTEK KREM Outages → ⋮ → Download diagnostics**. The street and house number are redacted; the settlement, group and schedule stay, and so do the counters of the groups (how many answers in a row another group or the main one was missing) and the past of the other groups.
+**Devices & services → DTEK DEM Outages → ⋮ → Download diagnostics**. The street and house number are redacted; the settlement, group and schedule stay, and so do the counters of the groups (how many answers in a row another group or the main one was missing) and the past of the other groups.
 
 ## Known limitations
 
@@ -530,15 +530,15 @@ The marks are on the second line of the template; `'🟡', '🔶', '⚫'` work t
 - The main group doesn't change by itself. If DTEK really moves the house to another group, the entities follow the old one until you change it in Repairs (the repair comes after about 15 min).
 - Each address can be added only once, so the other groups of a house are followed in the same entry, not as entries of their own. The other groups have no sensors of their own: they are in the `…_other_groups` calendar, the attributes and `get_schedule`, and the "Other groups of the address in the schedule" option turns the sensors to all groups.
 - In the "any group" mode the schedule takes the worst of all groups. If your flat is fed by one line, it shows the outages of the other lines too.
-- Only DTEK KREM (Kyiv region). Kyiv city is served by DTEK KEM / Yasno, which this integration does not cover.
+- Only DTEK DEM (Kyiv region). Kyiv city is served by DTEK KEM / Yasno, which this integration does not cover.
 
 ## Comparison with other integrations
 
-Two more Home Assistant integrations cover DTEK KREM. The comparison is based on their code as of 2026-10-18: [groove-max/ha-dtek-monitor](https://github.com/groove-max/ha-dtek-monitor) version 1.7.0 and [aavdberg/ha-dtek](https://github.com/aavdberg/ha-dtek) version 0.1.3. Both are developed actively, so check their repositories for the current state.
+Two more Home Assistant integrations cover DTEK DEM. The comparison is based on their code as of 2026-10-18: [groove-max/ha-dtek-monitor](https://github.com/groove-max/ha-dtek-monitor) version 1.7.0 and [aavdberg/ha-dtek](https://github.com/aavdberg/ha-dtek) version 0.1.3. Both are developed actively, so check their repositories for the current state.
 
-| | **DTEK KREM Outages** (this one) | **DTEK Monitor** (groove-max) | **DTEK Outages** (aavdberg) |
+| | **DTEK DEM Outages** (this one) | **DTEK Monitor** (groove-max) | **DTEK Outages** (aavdberg) |
 |---|---|---|---|
-| Operators | DTEK KREM | DTEK OEM, KREM, DNEM, KEM | DTEK DNEM, KEM, KREM, OEM |
+| Operators | DTEK DEM | DTEK OEM, KREM, DNEM, KEM | DTEK DNEM, KEM, KREM, OEM |
 | How it gets the data | `POST /ua/ajax` with the CSRF token from the cookie, honest User-Agent | Loads the `/ua/shutdowns` page with `curl_cffi`, which imitates Chrome (TLS fingerprint, headers), then `/ua/ajax` | Loads the `/ua/shutdowns` page with `aiohttp` and a browser User-Agent, then `/ua/ajax` |
 | Third-party dependencies | none | `curl_cffi` | none |
 | Backup source | Baskerville42 mirror | none | none |
@@ -590,7 +590,7 @@ Outage data is provided by DTEK Kyiv Regional Electric Networks; every entity ca
 
 ## Releases
 
-The `Tag & Release` workflow runs on every push to `main` and reads `version` from `custom_components/dtek_krem_outages/manifest.json`, the only place the version is kept. It first runs the tests, hassfest and HACS validation. If they pass and the tag or GitHub release for that version doesn't exist yet, the workflow creates whichever is missing, and HACS offers that release as an update. The release notes are the version's section in `CHANGELOG.md`. To publish a release:
+The `Tag & Release` workflow runs on every push to `main` and reads `version` from `custom_components/dtek_dem_outages/manifest.json`, the only place the version is kept. It first runs the tests, hassfest and HACS validation. If they pass and the tag or GitHub release for that version doesn't exist yet, the workflow creates whichever is missing, and HACS offers that release as an update. The release notes are the version's section in `CHANGELOG.md`. To publish a release:
 
 1. Bump `version` in `manifest.json`.
 2. Add a `## [X.Y.Z] - YYYY-MM-DD` section to `CHANGELOG.md` (a test checks it exists).
@@ -598,8 +598,8 @@ The `Tag & Release` workflow runs on every push to `main` and reads `version` fr
 
 ## Feedback
 
-- A bug, an address that can't be found or a wrong group: [open an issue](https://github.com/NetZhizni/ha-dtek-krem-outages/issues/new/choose), there is a template for each case.
-- Questions, ideas, your automations and dashboards: [Discussions](https://github.com/NetZhizni/ha-dtek-krem-outages/discussions).
+- A bug, an address that can't be found or a wrong group: [open an issue](https://github.com/ra1phdd/ha-dtek-dem-outages/issues/new/choose), there is a template for each case.
+- Questions, ideas, your automations and dashboards: [Discussions](https://github.com/ra1phdd/ha-dtek-dem-outages/discussions).
 - Want to help with the code: see [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 If the integration is useful to you, star the repository: it helps others find it.

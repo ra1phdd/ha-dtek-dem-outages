@@ -1,4 +1,4 @@
-"""Sensors for DTEK KREM Outages."""
+"""Sensors for DTEK DEM Outages."""
 
 from __future__ import annotations
 
@@ -260,7 +260,7 @@ def _outage_end_attributes(
 
 @dataclass(frozen=True, kw_only=True)
 class DtekSensorDescription(SensorEntityDescription):
-    """Describes a DTEK KREM Outages sensor."""
+    """Describes a DTEK DEM Outages sensor."""
 
     value_fn: Callable[[DtekCoordinator, datetime], Any]
     attributes_fn: Callable[[DtekCoordinator, datetime], dict[str, Any] | None] = (

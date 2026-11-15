@@ -1,16 +1,16 @@
-<img src="https://raw.githubusercontent.com/NetZhizni/ha-dtek-krem-outages/main/custom_components/dtek_krem_outages/brand/icon.png" alt="DTEK KREM Outages" width="96" align="right">
+<img src="https://raw.githubusercontent.com/ra1phdd/ha-dtek-dem-outages/main/custom_components/dtek_dem_outages/brand/icon.png" alt="DTEK DEM Outages" width="96" align="right">
 
-# DTEK KREM Outages
+# DTEK DEM Outages
 
 [![HACS Default](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://hacs.xyz/)
-[![Validate](https://github.com/NetZhizni/ha-dtek-krem-outages/actions/workflows/validate.yml/badge.svg)](https://github.com/NetZhizni/ha-dtek-krem-outages/actions/workflows/validate.yml)
-[![Tests](https://github.com/NetZhizni/ha-dtek-krem-outages/actions/workflows/tests.yml/badge.svg)](https://github.com/NetZhizni/ha-dtek-krem-outages/actions/workflows/tests.yml)
+[![Validate](https://github.com/ra1phdd/ha-dtek-dem-outages/actions/workflows/validate.yml/badge.svg)](https://github.com/ra1phdd/ha-dtek-dem-outages/actions/workflows/validate.yml)
+[![Tests](https://github.com/ra1phdd/ha-dtek-dem-outages/actions/workflows/tests.yml/badge.svg)](https://github.com/ra1phdd/ha-dtek-dem-outages/actions/workflows/tests.yml)
 
-**Українська** | [English](https://github.com/NetZhizni/ha-dtek-krem-outages/blob/main/doc/README_en.md)
+**Українська** | [English](https://github.com/ra1phdd/ha-dtek-dem-outages/blob/main/doc/README_en.md)
 
-Інтеграція Home Assistant для графіків відключень [ДТЕК Київські регіональні електромережі](https://www.dtek-krem.com.ua/ua/shutdowns) (ДТЕК КРЕМ, Київська область). Вона показує вашу чергу, графік на сьогодні й завтра, відключення, які ДТЕК вказує для вашої адреси, і надсилає події, коли графік змінюється або відключення ось-ось почнеться.
+Інтеграція Home Assistant для перевірки поточних відключень [ДТЕК Донецькі електромережі](https://www.dtek-dem.com.ua/ua/shutdowns) (ДТЕК ДЕМ, Донецька область). Вона просить населений пункт, вулицю й номер будинку та показує відключення, які ДТЕК вказує для адреси. ДТЕК ДЕМ не публікує графіки погодинних відключень: якщо адреса не повертається у `data`, вважається, що світло є.
 
-> Data provided by [DTEK KREM](https://www.dtek-krem.com.ua/ua/shutdowns). Проєкт не пов'язаний з ДТЕК.
+> Data provided by [DTEK DEM](https://www.dtek-dem.com.ua/ua/shutdowns). Проєкт не пов'язаний з ДТЕК.
 
 ## Що це
 
@@ -27,21 +27,21 @@
 
 ## Як це виглядає
 
-<img src="https://raw.githubusercontent.com/NetZhizni/ha-dtek-krem-outages/main/doc/images/dashboard.png" alt="Картки Markdown, Entities і Calendar з даними інтеграції" width="640">
+<img src="https://raw.githubusercontent.com/ra1phdd/ha-dtek-dem-outages/main/doc/images/dashboard.png" alt="Картки Markdown, Entities і Calendar з даними інтеграції" width="640">
 
 Налаштування: населений пункт → вулиця → будинок, як на сайті ДТЕК.
 
-<img src="https://raw.githubusercontent.com/NetZhizni/ha-dtek-krem-outages/main/doc/images/setup.gif" alt="Додавання інтеграції: вибір населеного пункту, вулиці й будинку" width="400">
+<img src="https://raw.githubusercontent.com/ra1phdd/ha-dtek-dem-outages/main/doc/images/setup.gif" alt="Додавання інтеграції: вибір населеного пункту, вулиці й будинку" width="400">
 
 | Пристрій | Календар |
 |---|---|
-| <img src="https://raw.githubusercontent.com/NetZhizni/ha-dtek-krem-outages/main/doc/images/device.png" alt="Сторінка пристрою з сенсорами" width="380"> | <img src="https://raw.githubusercontent.com/NetZhizni/ha-dtek-krem-outages/main/doc/images/calendar.png" alt="Календар відключень з подією" width="480"> |
+| <img src="https://raw.githubusercontent.com/ra1phdd/ha-dtek-dem-outages/main/doc/images/device.png" alt="Сторінка пристрою з сенсорами" width="380"> | <img src="https://raw.githubusercontent.com/ra1phdd/ha-dtek-dem-outages/main/doc/images/calendar.png" alt="Календар відключень з подією" width="480"> |
 
 ## Звідки дані
 
 | Джерело | Що | Коли |
 |---|---|---|
-| [dtek-krem.com.ua](https://www.dtek-krem.com.ua/ua/shutdowns) | Будинки вашої вулиці з чергою й поточним відключенням, фактичний графік (`fact`), тижневий (`preset`) і прапорці, що з цього показує сторінка | Кожне оновлення |
+| [dtek-dem.com.ua](https://www.dtek-dem.com.ua/ua/shutdowns) | Будинки вашої вулиці з чергою й поточним відключенням, фактичний графік (`fact`), тижневий (`preset`) і прапорці, що з цього показує сторінка | Кожне оновлення |
 | [Baskerville42/outage-data-ua](https://github.com/Baskerville42/outage-data-ua) (публічне дзеркало тих самих `fact`/`preset`, оновлюється приблизно раз на 5 хв) | Лише графік, без даних адреси | Тільки коли ДТЕК недоступний, і тільки якщо версія новіша; для запису без адреси — завжди |
 
 Сторінки ДТЕК закриті JavaScript-перевіркою від ботів, але ендпоінт, з якого сторінка відключень бере дані (`POST /ua/ajax`), — ні. Інтеграція звертається до нього так само, як сторінка: з CSRF-токеном сайту, одним запитом на запис за оновлення й чесним User-Agent. Вона надсилає версію, яку вже має, і ДТЕК додає графік лише тоді, коли є новіший, тож більшість відповідей важать кілька кілобайт. Перевірку від ботів інтеграція не обходить і браузер не імітує.
@@ -56,35 +56,35 @@
 
 ### Спосіб 1: [HACS](https://hacs.xyz/) (рекомендовано)
 
-[![Відкрити репозиторій DTEK KREM Outages у HACS вашого Home Assistant.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=NetZhizni&repository=ha-dtek-krem-outages&category=integration)
+[![Відкрити репозиторій DTEK DEM Outages у HACS вашого Home Assistant.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ra1phdd&repository=ha-dtek-dem-outages&category=integration)
 
 Або знайдіть інтеграцію в HACS самі, додавати репозиторій вручну не потрібно:
 
-1. Відкрийте HACS і в пошуку введіть **DTEK KREM Outages** → відкрийте → **Download**.
+1. Відкрийте HACS і в пошуку введіть **DTEK DEM Outages** → відкрийте → **Download**.
 2. Перезапустіть Home Assistant.
 
 ### Спосіб 2: Git clone з GitHub
 
 ```bash
 cd /config
-git clone https://github.com/NetZhizni/ha-dtek-krem-outages.git
+git clone https://github.com/ra1phdd/ha-dtek-dem-outages.git
 mkdir -p custom_components
-cp -r ha-dtek-krem-outages/custom_components/dtek_krem_outages custom_components/
+cp -r ha-dtek-dem-outages/custom_components/dtek_dem_outages custom_components/
 ```
 
 Після цього перезапустіть Home Assistant. Щоб пізніше перейти на реліз, виконайте в клоні `git fetch --tags && git checkout <версія>` і скопіюйте теку ще раз.
 
 ### Спосіб 3: Вручну через [Samba](https://github.com/home-assistant/addons/tree/master/samba) / [FTPS](https://github.com/hassio-addons/addon-ftp)
 
-1. Завантажте останній реліз з [Releases](https://github.com/NetZhizni/ha-dtek-krem-outages/releases).
-2. Скопіюйте `custom_components/dtek_krem_outages` у `config/custom_components`.
+1. Завантажте останній реліз з [Releases](https://github.com/ra1phdd/ha-dtek-dem-outages/releases).
+2. Скопіюйте `custom_components/dtek_dem_outages` у `config/custom_components`.
 3. Перезапустіть Home Assistant.
 
 ## Налаштування
 
-[![Відкрити Home Assistant і почати налаштування DTEK KREM Outages.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=dtek_krem_outages)
+[![Відкрити Home Assistant і почати налаштування DTEK DEM Outages.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=dtek_dem_outages)
 
-**Налаштування → Пристрої та служби → Додати інтеграцію → DTEK KREM Outages**, далі:
+**Налаштування → Пристрої та служби → Додати інтеграцію → DTEK DEM Outages**, далі:
 
 1. **Населений пункт**: почніть вводити, наприклад `Бориспіль`. Список той самий, що в ДТЕК (близько 1200 населених пунктів).
 2. **Вулиця**: для сіл без назв вулиць є `Без вулиці`. Деякі населені пункти ДТЕК записав у кількох написаннях (`с. Софіївська Борщагівка` і `Софіївська Борщагівка`). Показуються вулиці всіх написань, вулиці іншого написання — з ним у дужках, тож неважливо, яке ви обрали.
@@ -121,11 +121,11 @@ cp -r ha-dtek-krem-outages/custom_components/dtek_krem_outages custom_components
 
 1. Нічого робити не треба, щоб бачити інші черги: вони з'являються в календарі `…_other_groups` (у бічній панелі **Календар** — «Назва запису Інші черги», наприклад «Дім Інші черги»), щойно ДТЕК їх вказує. Події основної черги й інших черг можна дивитися разом, позначивши обидва календарі:
 
-   <img src="https://raw.githubusercontent.com/NetZhizni/ha-dtek-krem-outages/main/doc/images/other-groups-calendar.png" alt="Календар: події основної черги й черги 5.1 поруч" width="480">
+   <img src="https://raw.githubusercontent.com/ra1phdd/ha-dtek-dem-outages/main/doc/images/other-groups-calendar.png" alt="Календар: події основної черги й черги 5.1 поруч" width="480">
 
-2. Щоб інші черги враховували датчики й попередження: **Налаштування → Пристрої та служби → DTEK KREM Outages →** шестерня біля запису. Унизу форми, у **«Інші черги адреси в графіку»**, оберіть режим і натисніть **Надіслати**; запис перезавантажиться сам.
+2. Щоб інші черги враховували датчики й попередження: **Налаштування → Пристрої та служби → DTEK DEM Outages →** шестерня біля запису. Унизу форми, у **«Інші черги адреси в графіку»**, оберіть режим і натисніть **Надіслати**; запис перезавантажиться сам.
 
-   <img src="https://raw.githubusercontent.com/NetZhizni/ha-dtek-krem-outages/main/doc/images/groups-options.png" alt="Параметри: вибір режиму «Інші черги адреси в графіку» і «Не враховувати черги»" width="480">
+   <img src="https://raw.githubusercontent.com/ra1phdd/ha-dtek-dem-outages/main/doc/images/groups-options.png" alt="Параметри: вибір режиму «Інші черги адреси в графіку» і «Не враховувати черги»" width="480">
 
 3. Якщо котрась черга вас не стосується, додайте її в **«Не враховувати черги»** у тій самій формі.
 
@@ -206,7 +206,7 @@ cp -r ha-dtek-krem-outages/custom_components/dtek_krem_outages custom_components
 
 ## Події
 
-Кожна подія надсилається на шину як `dtek_krem_outages_event` з полем `type` і в event-сутність з тими самими даними.
+Кожна подія надсилається на шину як `dtek_dem_outages_event` з полем `type` і в event-сутність з тими самими даними.
 
 У кожній події є `type`, `group` (`GPV3.1`), `group_name` (`3.1`), `settlement`, `street`, `house` (у записі без адреси — `null`), `config_entry_id`, `entry_title`, а також:
 
@@ -236,8 +236,8 @@ cp -r ha-dtek-krem-outages/custom_components/dtek_krem_outages custom_components
 
 | Сервіс | Опис |
 |---|---|
-| `dtek_krem_outages.refresh` | Оновити зараз. `config_entry_id` необов'язковий; помилка, якщо не відповіло жодне джерело. Запис, оновлений менш ніж хвилину тому, ДТЕК повторно не питає: виклик повертає результат того оновлення, тож частий виклик з автоматизації не засипає ДТЕК запитами |
-| `dtek_krem_outages.get_schedule` | Повертає `{entries: [{group, extra_groups, groups_mode, days: {дата: {outages, outages_text, outage_minutes, possible, schedule}}, weekly, groups: {GPV3.1: {group_name, days, weekly}, ...}, address_outage, address_history, source, connection, data_status, publication, ...}]}`. `days` і `weekly` — графік, який показують сутності, `groups` — кожна черга окремо, `address_history` — відключення за адресою, які ДТЕК уже не показує (за 7 днів) |
+| `dtek_dem_outages.refresh` | Оновити зараз. `config_entry_id` необов'язковий; помилка, якщо не відповіло жодне джерело. Запис, оновлений менш ніж хвилину тому, ДТЕК повторно не питає: виклик повертає результат того оновлення, тож частий виклик з автоматизації не засипає ДТЕК запитами |
+| `dtek_dem_outages.get_schedule` | Повертає `{entries: [{group, extra_groups, groups_mode, days: {дата: {outages, outages_text, outage_minutes, possible, schedule}}, weekly, groups: {GPV3.1: {group_name, days, weekly}, ...}, address_outage, address_history, source, connection, data_status, publication, ...}]}`. `days` і `weekly` — графік, який показують сутності, `groups` — кожна черга окремо, `address_history` — відключення за адресою, які ДТЕК уже не показує (за 7 днів) |
 
 ## Приклади
 
@@ -251,11 +251,11 @@ cp -r ha-dtek-krem-outages/custom_components/dtek_krem_outages custom_components
 alias: "Графік відключень → Telegram"
 triggers:
   - trigger: event
-    event_type: dtek_krem_outages_event
+    event_type: dtek_dem_outages_event
     event_data:
       type: schedule_published
   - trigger: event
-    event_type: dtek_krem_outages_event
+    event_type: dtek_dem_outages_event
     event_data:
       type: schedule_changed
 actions:
@@ -282,7 +282,7 @@ mode: queued
 alias: "Скоро відключення → телефон"
 triggers:
   - trigger: event
-    event_type: dtek_krem_outages_event
+    event_type: dtek_dem_outages_event
     event_data:
       type: outage_warning
 conditions:
@@ -307,7 +307,7 @@ mode: queued
 alias: "Аварійне відключення вдома"
 triggers:
   - trigger: event
-    event_type: dtek_krem_outages_event
+    event_type: dtek_dem_outages_event
     event_data:
       type: address_outage
 conditions:
@@ -504,8 +504,8 @@ content: |
 
 | Що бачите | Що робити |
 |---|---|
-| Інтеграції немає в списку | Перезапустіть Home Assistant. Перевірте, що `manifest.json` лежить саме в `config/custom_components/dtek_krem_outages/` |
-| Немає вашого населеного пункту, вулиці чи будинку | Перевірте адресу на [dtek-krem.com.ua](https://www.dtek-krem.com.ua/ua/shutdowns): список той самий. Київ обслуговує інший оператор (ДТЕК КЕМ / Yasno) |
+| Інтеграції немає в списку | Перезапустіть Home Assistant. Перевірте, що `manifest.json` лежить саме в `config/custom_components/dtek_dem_outages/` |
+| Немає вашого населеного пункту, вулиці чи будинку | Перевірте адресу на [dtek-dem.com.ua](https://www.dtek-dem.com.ua/ua/shutdowns): список той самий. Київ обслуговує інший оператор (ДТЕК КЕМ / Yasno) |
 | Під час додавання «ДТЕК недоступний» | Спробуйте пізніше або додайте запис лише за чергою й допишіть адресу пізніше через **Переналаштувати** |
 | `sensor.…_dtek_connection` показує `mirror` чи `offline` | ДТЕК зараз не відповідає; `blocked: true` означає, що він віддав перевірку від ботів. Інтеграція повторює спроби сама, з інтервалом до 15 хв. Не видаляйте й не додавайте запис заново: збережений графік і так працює |
 | У календарі немає можливих відключень | ДТЕК зараз не показує тижневий графік (`weekly_schedule_shown: false` у `sensor.…_dtek_connection`) або вимкнено параметр «Показувати можливі відключення» |
@@ -517,7 +517,7 @@ content: |
 
 ## Діагностика
 
-**Пристрої та служби → DTEK KREM Outages → ⋮ → Завантажити діагностику**. Вулиця й номер будинку приховані; населений пункт, черга й графік лишаються, а також лічильники черг (скільки відповідей поспіль бракувало іншої черги чи основної) і минуле інших черг.
+**Пристрої та служби → DTEK DEM Outages → ⋮ → Завантажити діагностику**. Вулиця й номер будинку приховані; населений пункт, черга й графік лишаються, а також лічильники черг (скільки відповідей поспіль бракувало іншої черги чи основної) і минуле інших черг.
 
 ## Відомі обмеження
 
@@ -534,7 +534,7 @@ content: |
 
 Для ДТЕК КРЕМ є ще дві інтеграції Home Assistant. Порівняння зроблено за їхнім кодом станом на 18.10.2026: [groove-max/ha-dtek-monitor](https://github.com/groove-max/ha-dtek-monitor) версії 1.7.0 і [aavdberg/ha-dtek](https://github.com/aavdberg/ha-dtek) версії 0.1.3. Обидва проєкти розвиваються, тож перевіряйте актуальний стан у їхніх репозиторіях.
 
-| | **DTEK KREM Outages** (цей) | **DTEK Monitor** (groove-max) | **DTEK Outages** (aavdberg) |
+| | **DTEK DEM Outages** (цей) | **DTEK Monitor** (groove-max) | **DTEK Outages** (aavdberg) |
 |---|---|---|---|
 | Оператори | ДТЕК КРЕМ | ДТЕК ОЕМ, КРЕМ, ДнЕМ, КЕМ | ДТЕК ДнЕМ, КЕМ, КРЕМ, ОЕМ |
 | Як отримує дані | `POST /ua/ajax` з CSRF-токеном із кукі, чесний User-Agent | Завантажує сторінку `/ua/shutdowns` через `curl_cffi`, що імітує браузер Chrome (TLS-відбиток, заголовки), далі `/ua/ajax` | Завантажує сторінку `/ua/shutdowns` через `aiohttp` з User-Agent браузера, далі `/ua/ajax` |
@@ -588,7 +588,7 @@ content: |
 
 ## Релізи
 
-Workflow `Tag & Release` запускається на кожен push у `main` і читає `version` з `custom_components/dtek_krem_outages/manifest.json`, єдиного місця, де живе версія. Спершу він проганяє тести, hassfest і валідацію HACS. Якщо вони пройшли, а тегу чи GitHub-релізу для цієї версії ще немає, workflow створює те, чого бракує, і HACS пропонує реліз як оновлення. Нотатки релізу — це секція версії в `CHANGELOG.md`. Щоб випустити реліз:
+Workflow `Tag & Release` запускається на кожен push у `main` і читає `version` з `custom_components/dtek_dem_outages/manifest.json`, єдиного місця, де живе версія. Спершу він проганяє тести, hassfest і валідацію HACS. Якщо вони пройшли, а тегу чи GitHub-релізу для цієї версії ще немає, workflow створює те, чого бракує, і HACS пропонує реліз як оновлення. Нотатки релізу — це секція версії в `CHANGELOG.md`. Щоб випустити реліз:
 
 1. Підніміть `version` у `manifest.json`.
 2. Додайте секцію `## [X.Y.Z] - YYYY-MM-DD` у `CHANGELOG.md` (її наявність перевіряє тест).
@@ -596,8 +596,8 @@ Workflow `Tag & Release` запускається на кожен push у `main`
 
 ## Зворотний зв'язок
 
-- Помилка, не знаходиться адреса чи не та черга — [створіть issue](https://github.com/NetZhizni/ha-dtek-krem-outages/issues/new/choose), для кожного випадку є шаблон.
-- Питання, ідеї, свої автоматизації й картки — у [Discussions](https://github.com/NetZhizni/ha-dtek-krem-outages/discussions).
+- Помилка, не знаходиться адреса чи не та черга — [створіть issue](https://github.com/ra1phdd/ha-dtek-dem-outages/issues/new/choose), для кожного випадку є шаблон.
+- Питання, ідеї, свої автоматизації й картки — у [Discussions](https://github.com/ra1phdd/ha-dtek-dem-outages/discussions).
 - Хочете допомогти з кодом — див. [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Якщо інтеграція вам корисна, поставте ⭐ репозиторію: так її легше знайти іншим.

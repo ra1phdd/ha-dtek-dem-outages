@@ -38,7 +38,7 @@ jobs:
       - name: Read version from manifest.json
         id: version
         run: |
-          VERSION=$(jq -r '.version' custom_components/dtek_krem_outages/manifest.json)
+          VERSION=$(jq -r '.version' custom_components/dtek_dem_outages/manifest.json)
           if [ -z "$VERSION" ] || [ "$VERSION" = "null" ]; then
             echo "::error::Could not read version from manifest.json"
             exit 1

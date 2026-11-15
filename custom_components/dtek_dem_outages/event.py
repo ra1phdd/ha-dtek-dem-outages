@@ -1,4 +1,4 @@
-"""Event entity for DTEK KREM Outages."""
+"""Event entity for DTEK DEM Outages."""
 
 from __future__ import annotations
 

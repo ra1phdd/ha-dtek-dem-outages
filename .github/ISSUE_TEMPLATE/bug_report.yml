@@ -5,16 +5,16 @@ body:
   - type: markdown
     attributes:
       value: |
-        Дякуємо, що повідомили! Спершу перегляньте розділ [«Якщо щось не так»](https://github.com/NetZhizni/ha-dtek-krem-outages#якщо-щось-не-так): там відповіді на часті питання.
+        Дякуємо, що повідомили! Спершу перегляньте розділ [«Якщо щось не так»](https://github.com/ra1phdd/ha-dtek-dem-outages#якщо-щось-не-так): там відповіді на часті питання.
 
-        Thanks for the report! Please check [Troubleshooting](https://github.com/NetZhizni/ha-dtek-krem-outages/blob/main/doc/README_en.md#troubleshooting) first.
+        Thanks for the report! Please check [Troubleshooting](https://github.com/ra1phdd/ha-dtek-dem-outages/blob/main/doc/README_en.md#troubleshooting) first.
 
         Якщо не знаходиться адреса або черга не та, оберіть шаблон **«Адреса чи черга»**. / For address or group problems, use the **Address or group** template.
   - type: input
     id: version
     attributes:
       label: "Версія інтеграції / Integration version"
-      description: "HACS → DTEK KREM Outages, або **Пристрої та служби → DTEK KREM Outages**"
+      description: "HACS → DTEK DEM Outages, або **Пристрої та служби → DTEK DEM Outages**"
       placeholder: "0.1.3"
     validations:
       required: true
@@ -56,8 +56,8 @@ body:
     attributes:
       label: "Журнал / Logs"
       description: |
-        **Пристрої та служби → DTEK KREM Outages → ⋮ → Увімкнути журнал налагодження**, повторіть проблему, потім вимкніть журнал і вставте сюди рядки з `custom_components.dtek_krem_outages`.
-        **Devices & services → DTEK KREM Outages → ⋮ → Enable debug logging**, reproduce, then disable it and paste the `custom_components.dtek_krem_outages` lines here.
+        **Пристрої та служби → DTEK DEM Outages → ⋮ → Увімкнути журнал налагодження**, повторіть проблему, потім вимкніть журнал і вставте сюди рядки з `custom_components.dtek_dem_outages`.
+        **Devices & services → DTEK DEM Outages → ⋮ → Enable debug logging**, reproduce, then disable it and paste the `custom_components.dtek_dem_outages` lines here.
       render: text
   - type: textarea
     id: diagnostics

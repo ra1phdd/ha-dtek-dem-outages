@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
-from custom_components.dtek_krem_outages.schedule import (
+from custom_components.dtek_dem_outages.schedule import (
     ALL_ON,
     Interval,
     combine_days,

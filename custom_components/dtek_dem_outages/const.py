@@ -1,34 +1,34 @@
-"""Constants for the DTEK KREM Outages integration."""
+"""Constants for the DTEK DEM Outages integration."""
 
 from __future__ import annotations
 
 from collections.abc import Mapping
 from typing import Any, Final
 
-DOMAIN: Final = "dtek_krem_outages"
-NAME: Final = "DTEK KREM Outages"
+DOMAIN: Final = "dtek_dem_outages"
+NAME: Final = "DTEK DEM Outages"
 
-ATTRIBUTION: Final = "Data provided by DTEK Kyiv Regional Electric Networks"
-MANUFACTURER: Final = "DTEK KREM"
-CONFIGURATION_URL: Final = "https://www.dtek-krem.com.ua/ua/shutdowns"
-PROJECT_URL: Final = "https://github.com/NetZhizni/ha-dtek-krem-outages"
+ATTRIBUTION: Final = "Data provided by DTEK Donetsk Electric Networks"
+MANUFACTURER: Final = "DTEK DEM"
+CONFIGURATION_URL: Final = "https://www.dtek-dem.com.ua/ua/shutdowns"
+PROJECT_URL: Final = "https://github.com/ra1phdd/ha-dtek-dem-outages"
 
-SITE_BASE_URL: Final = "https://www.dtek-krem.com.ua"
+SITE_BASE_URL: Final = "https://www.dtek-dem.com.ua"
 SITE_AJAX_PATH: Final = "/ua/ajax"
 SITE_REFERER_PATH: Final = "/ua/shutdowns"
-CSRF_COOKIE: Final = "_csrf-dtek-krem"
-# Backup source: a public mirror of the same ``fact``/``preset`` objects,
-# refreshed every ~5 minutes (https://github.com/Baskerville42/outage-data-ua).
+CSRF_COOKIE: Final = "_csrf-dtek-dem"
+# DTEK DEM does not publish daily or weekly schedules. The shared mirror
+# currently has no Donetsk file; keep this URL only for compatibility with
+# older entries and never use its Kyiv data for a DEM entry.
 MIRROR_URL: Final = (
-    "https://raw.githubusercontent.com/Baskerville42/outage-data-ua/main/data/"
-    "kyiv-region.json"
+    "https://raw.githubusercontent.com/Baskerville42/outage-data-ua/main/data/dem.json"
 )
 API_TIMEOUT: Final = 20
 # Any ``updateFact`` that differs from the current version and is truthy in
 # PHP (not empty, not "0") makes DTEK include the schedule in its answer.
 FORCE_UPDATE_FACT: Final = "01.01.2000 00:00"
 
-# DTEK publishes local Kyiv times without an offset.
+# DTEK publishes local Ukrainian times without an offset.
 TIMEZONE: Final = "Europe/Kyiv"
 
 # Schedule groups ("черги") in UI order.

@@ -8,7 +8,7 @@ import aiohttp
 import pytest
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
-from custom_components.dtek_krem_outages.api import (
+from custom_components.dtek_dem_outages.api import (
     AddressOutage,
     DtekBlockedError,
     DtekClient,
@@ -27,12 +27,15 @@ from custom_components.dtek_krem_outages.api import (
     mask_csrf_token,
     parse_day,
 )
-from custom_components.dtek_krem_outages.const import (
+from custom_components.dtek_dem_outages.const import (
+    CONFIGURATION_URL,
+    CSRF_COOKIE,
     FORCE_UPDATE_FACT,
     OUTAGE_KIND_EMERGENCY,
     OUTAGE_KIND_OTHER,
     OUTAGE_KIND_PLANNED,
     OUTAGE_KIND_STABILIZATION,
+    SITE_BASE_URL,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -74,8 +77,15 @@ def test_csrf_token_helpers() -> None:
 
 def test_user_agent() -> None:
     """The User-Agent names the integration and its version."""
-    assert "ha-dtek-krem-outages/0.1.0" in build_user_agent("0.1.0")
-    assert "ha-dtek-krem-outages (" in build_user_agent()
+    assert "ha-dtek-dem-outages/0.1.0" in build_user_agent("0.1.0")
+    assert "ha-dtek-dem-outages (" in build_user_agent()
+
+
+def test_donetsk_site_configuration() -> None:
+    """The client targets the Donetsk DTEK endpoint and its CSRF cookie."""
+    assert SITE_BASE_URL == "https://www.dtek-dem.com.ua"
+    assert CONFIGURATION_URL == "https://www.dtek-dem.com.ua/ua/shutdowns"
+    assert CSRF_COOKIE == "_csrf-dtek-dem"
 
 
 def test_parse_real_answer() -> None:

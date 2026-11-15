@@ -9,12 +9,12 @@ from freezegun.api import FrozenDateTimeFactory
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.dtek_krem_outages.const import (
+from custom_components.dtek_dem_outages.const import (
     ATTR_CONFIG_ENTRY_ID,
     DOMAIN,
     REFRESH_COOLDOWN,
 )
-from custom_components.dtek_krem_outages.diagnostics import (
+from custom_components.dtek_dem_outages.diagnostics import (
     async_get_config_entry_diagnostics,
 )
 from homeassistant.core import HomeAssistant

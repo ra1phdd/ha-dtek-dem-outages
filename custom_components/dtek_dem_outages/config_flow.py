@@ -1,4 +1,4 @@
-"""Config flow for DTEK KREM Outages."""
+"""Config flow for DTEK DEM Outages."""
 
 from __future__ import annotations
 
@@ -419,10 +419,8 @@ class DtekKremConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_unreachable(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Try DTEK again, or follow a group with the schedule from the mirror."""
-        return self.async_show_menu(
-            step_id="unreachable", menu_options=["user", "group_only"]
-        )
+        """Retry loading the settlements; an address is required for every entry."""
+        return self.async_show_menu(step_id="unreachable", menu_options=["user"])
 
     async def async_step_street(
         self, user_input: dict[str, Any] | None = None
@@ -496,6 +494,10 @@ class DtekKremConfigFlow(ConfigFlow, domain=DOMAIN):
                 if user_input.get(CONF_LANGUAGE) in LANGUAGES:
                     self._language = user_input[CONF_LANGUAGE]
                 self._groups = self._houses[house].groups
+                if not self._groups:
+                    # DTEK DEM has no schedule groups; the address itself is
+                    # enough to determine whether an outage is reported.
+                    return await self._async_finish("", manual=False)
                 if len(self._groups) != 1:
                     return await self.async_step_group()
                 # During a stabilization outage DTEK lists its group alone.

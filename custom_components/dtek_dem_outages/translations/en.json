@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Settlement",
-        "description": "Outage schedules of DTEK Kyiv Regional Electric Networks (Kyiv region). Choose your address the same way as on dtek-krem.com.ua; start typing to search.",
+        "description": "Current outage information from DTEK Donetsk Electric Networks. Choose your address the same way as on dtek-dem.com.ua; start typing to search.",
         "data": {
           "settlement": "Settlement"
         },
@@ -59,7 +59,7 @@
       },
       "group_only": {
         "title": "Group without an address",
-        "description": "The schedule of the group comes from the public mirror of the DTEK data. Your group is shown on dtek-krem.com.ua after you enter the address.",
+        "description": "The schedule of the group comes from the public mirror of the DTEK data. Your group is shown on dtek-dem.com.ua after you enter the address.",
         "data": {
           "group": "Group",
           "name": "Name",
@@ -89,7 +89,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "DTEK KREM Outages options",
+        "title": "DTEK DEM Outages options",
         "data": {
           "update_interval": "Update interval",
           "warn_before_start": "Warn before an outage starts",
@@ -234,13 +234,13 @@
       "message": "Error fetching the outage schedule: {error}"
     },
     "entry_not_found": {
-      "message": "No DTEK KREM Outages entry with ID {entry_id}."
+      "message": "No DTEK DEM Outages entry with ID {entry_id}."
     },
     "entry_not_loaded": {
-      "message": "DTEK KREM Outages entry {entry_id} is not loaded."
+      "message": "DTEK DEM Outages entry {entry_id} is not loaded."
     },
     "no_loaded_entries": {
-      "message": "No DTEK KREM Outages entries are loaded."
+      "message": "No DTEK DEM Outages entries are loaded."
     },
     "refresh_failed": {
       "message": "Updating failed for: {entries}."

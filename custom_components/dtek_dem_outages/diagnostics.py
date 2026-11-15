@@ -1,4 +1,4 @@
-"""Diagnostics for DTEK KREM Outages.
+"""Diagnostics for DTEK DEM Outages.
 
 The street and house number are redacted; the settlement and group stay,
 since the schedule can't be understood without them. The state the

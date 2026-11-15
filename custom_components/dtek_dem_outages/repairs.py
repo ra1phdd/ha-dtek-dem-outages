@@ -1,4 +1,4 @@
-"""Repairs for DTEK KREM Outages.
+"""Repairs for DTEK DEM Outages.
 
 The coordinator raises an issue when DTEK lists other groups for the house
 without the main group of the entry, and keeps it as long as that lasts. Its

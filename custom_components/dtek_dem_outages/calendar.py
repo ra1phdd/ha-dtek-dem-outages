@@ -1,4 +1,4 @@
-"""Calendars for DTEK KREM Outages."""
+"""Calendars for DTEK DEM Outages."""
 
 from __future__ import annotations
 

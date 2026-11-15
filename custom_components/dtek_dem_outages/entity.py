@@ -1,4 +1,4 @@
-"""Base entity for DTEK KREM Outages."""
+"""Base entity for DTEK DEM Outages."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from .coordinator import DtekCoordinator
 
 
 class DtekEntity(CoordinatorEntity[DtekCoordinator]):
-    """An entity belonging to the device of a DTEK KREM Outages entry.
+    """An entity belonging to the device of a DTEK DEM Outages entry.
 
     The name follows the language chosen for the entry instead of the language
     of Home Assistant; the entity ID is still built the way Home Assistant

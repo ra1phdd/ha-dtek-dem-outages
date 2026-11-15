@@ -1,4 +1,4 @@
-"""Binary sensors for DTEK KREM Outages."""
+"""Binary sensors for DTEK DEM Outages."""
 
 from __future__ import annotations
 

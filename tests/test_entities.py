@@ -13,7 +13,7 @@ from pytest_homeassistant_custom_component.common import (
     async_fire_time_changed,
 )
 
-from custom_components.dtek_krem_outages.const import (
+from custom_components.dtek_dem_outages.const import (
     ATTRIBUTION,
     CONF_GROUPS_MODE,
     CONF_LANGUAGE,

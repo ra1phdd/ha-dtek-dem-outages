@@ -4,7 +4,7 @@ refresh:
       required: false
       selector:
         config_entry:
-          integration: dtek_krem_outages
+          integration: dtek_dem_outages
 
 get_schedule:
   fields:
@@ -12,4 +12,4 @@ get_schedule:
       required: false
       selector:
         config_entry:
-          integration: dtek_krem_outages
+          integration: dtek_dem_outages

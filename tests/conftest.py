@@ -1,4 +1,4 @@
-"""Fixtures for DTEK KREM Outages tests."""
+"""Fixtures for DTEK DEM Outages tests."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import (
     AiohttpClientMockResponse,
 )
 
-from custom_components.dtek_krem_outages.const import (
+from custom_components.dtek_dem_outages.const import (
     CONF_GROUP,
     CONF_GROUP_MANUAL,
     CONF_HOUSE,

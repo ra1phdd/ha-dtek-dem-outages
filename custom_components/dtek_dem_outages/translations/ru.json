@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Населённый пункт",
-        "description": "Графики отключений ДТЭК Киевские региональные электросети (Киевская область). Выберите адрес так же, как на dtek-krem.com.ua; начните вводить название для поиска.",
+        "description": "Информация о текущих отключениях ДТЭК Донецкие электросети. Выберите адрес так же, как на dtek-dem.com.ua; начните вводить название для поиска.",
         "data": {
           "settlement": "Населённый пункт"
         },
@@ -59,7 +59,7 @@
       },
       "group_only": {
         "title": "Очередь без адреса",
-        "description": "График очереди берётся из публичного зеркала данных ДТЭК. Свою очередь можно узнать на dtek-krem.com.ua, введя адрес.",
+        "description": "График очереди берётся из публичного зеркала данных ДТЭК. Свою очередь можно узнать на dtek-dem.com.ua, введя адрес.",
         "data": {
           "group": "Очередь",
           "name": "Название",
@@ -89,7 +89,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Параметры DTEK KREM Outages",
+        "title": "Параметры DTEK DEM Outages",
         "data": {
           "update_interval": "Интервал обновления",
           "warn_before_start": "Предупреждать перед началом отключения",
@@ -234,13 +234,13 @@
       "message": "Ошибка получения графика отключений: {error}"
     },
     "entry_not_found": {
-      "message": "Нет записи DTEK KREM Outages с ID {entry_id}."
+      "message": "Нет записи DTEK DEM Outages с ID {entry_id}."
     },
     "entry_not_loaded": {
-      "message": "Запись DTEK KREM Outages {entry_id} не загружена."
+      "message": "Запись DTEK DEM Outages {entry_id} не загружена."
     },
     "no_loaded_entries": {
-      "message": "Нет загруженных записей DTEK KREM Outages."
+      "message": "Нет загруженных записей DTEK DEM Outages."
     },
     "refresh_failed": {
       "message": "Не удалось обновить: {entries}."

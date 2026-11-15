@@ -1,4 +1,4 @@
-"""Services for DTEK KREM Outages."""
+"""Services for DTEK DEM Outages."""
 
 from __future__ import annotations
 

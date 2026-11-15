@@ -1,1 +1,1 @@
-"""Tests for the DTEK KREM Outages integration."""
+"""Tests for the DTEK DEM Outages integration."""

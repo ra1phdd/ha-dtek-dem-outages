@@ -1,4 +1,4 @@
-"""Data update coordinator for DTEK KREM Outages.
+"""Data update coordinator for DTEK DEM Outages.
 
 Each update asks DTEK for the street of the entry. The answer always holds
 the houses (group and current outage of the address) and holds the schedule
@@ -308,7 +308,7 @@ class DtekData:
         alone, or every followed group when they are combined.
         """
         if not self.combined:
-            return [self.group]
+            return [self.group] if self.group else []
         return _groups_in(self.group_days, interval, tz)
 
 
@@ -341,7 +341,7 @@ class DtekCoordinator(DataUpdateCoordinator[DtekData]):
         self.street: str | None = entry.data.get(CONF_STREET)
         self.house: str | None = entry.data.get(CONF_HOUSE)
         self.has_address = bool(self.settlement and self.street and self.house)
-        self.group: str = entry.data[CONF_GROUP]
+        self.group: str = entry.data.get(CONF_GROUP, "")
         self.group_manual: bool = bool(entry.data.get(CONF_GROUP_MANUAL, False))
         self._read_options(options)
         # Entity translations in self.language, keyed like
@@ -436,7 +436,7 @@ class DtekCoordinator(DataUpdateCoordinator[DtekData]):
     @property
     def followed_groups(self) -> list[str]:
         """Return the main group and the other groups followed, main first."""
-        return [self.group, *self._extra_groups]
+        return [group for group in [self.group, *self._extra_groups] if group]
 
     def _followed_days(self) -> dict[str, dict[date, str]]:
         """Return the schedule of every followed group, the main one first."""
@@ -831,7 +831,7 @@ class DtekCoordinator(DataUpdateCoordinator[DtekData]):
         queued before the snapshot is taken.
         """
         if self._mode() == GROUPS_MODE_MAIN:
-            return [self.group]
+            return [self.group] if self.group else []
         return _groups_in(self._followed_days(), interval, self.tz)
 
     def _update_days(self, now: datetime, *, announce: bool = True) -> bool:
@@ -900,16 +900,23 @@ class DtekCoordinator(DataUpdateCoordinator[DtekData]):
         and the main group doesn't move; a group DTEK adds is taken.
         """
         if house is None:
-            if not self._house_missing_logged:
-                _LOGGER.warning(
-                    "%s: house %s is not listed by DTEK for %s, %s any more",
-                    self.config_entry.title,
-                    self.house,
-                    self.settlement,
-                    self.street,
-                )
-                self._house_missing_logged = True
-            self._address_ok = False
+            if self.group:
+                if not self._house_missing_logged:
+                    _LOGGER.warning(
+                        "%s: house %s is not listed by DTEK for %s, %s any more",
+                        self.config_entry.title,
+                        self.house,
+                        self.settlement,
+                        self.street,
+                    )
+                    self._house_missing_logged = True
+                self._address_ok = False
+                return
+            # DTEK DEM has no outage schedules: a successful response without
+            # a house record means that the address currently has power.
+            self._house_missing_logged = False
+            self._address_ok = True
+            self._update_address_outage(None, dt_util.utcnow())
             return
         self._house_missing_logged = False
         if house.external and not self._external_operator:

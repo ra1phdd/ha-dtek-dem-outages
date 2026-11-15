@@ -1,49 +1,21 @@
-"""Async client for the outage data of DTEK KREM (https://www.dtek-krem.com.ua).
+"""Async client for the outage data of DTEK DEM (https://www.dtek-dem.com.ua).
 
-Facts verified against the live site on 2026-10-18 (samples in tests/fixtures):
+Facts verified against the live site on 2026-11-15:
 
-* ``/ua/shutdowns`` and every other page are behind Imperva Incapsula: a GET
-  returns a JavaScript challenge that only a browser can pass. POST requests
-  to ``/ua/ajax`` are not challenged. The shutdowns page itself loads its data
-  from this endpoint, and so does this client.
+* ``/ua/shutdowns`` is behind Imperva Incapsula, but the page's POST requests
+  to ``/ua/ajax`` are not challenged. The page uses this endpoint for its
+  address lookup and this client follows the same protocol.
 * ``/ua/ajax`` is a Yii2 action with CSRF validation. A POST without a token
-  answers HTTP 400 and sets the ``_csrf-dtek-krem`` cookie. Yii2 signs that
+  answers HTTP 400 and sets the ``_csrf-dtek-dem`` cookie. Yii2 signs that
   cookie but does not encrypt it: it holds the PHP-serialized token. A request
   is accepted when the ``X-CSRF-Token`` header carries the masked token,
-  ``base64url(mask + (mask XOR token))`` with a random mask, which is what the
-  page embeds in ``<meta name="csrf-token">``.
+  ``base64url(mask + (mask XOR token))``.
 * ``method=getStreets`` answers ``{"result": true, "streets": {settlement:
-  [street, ...]}}``: about 1200 settlements, 470 KB.
-* ``method=getHomeNum`` takes ``data[i][name]``/``data[i][value]`` pairs for
-  ``city``, ``street`` and ``updateFact`` and answers ``{"result": true,
-  "data": {house: {...}}, ...}``. A house has ``sub_type`` (reason of the
-  current outage, ``""`` when there is none), ``start_date``/``end_date``
-  (``"HH:MM dd.mm.YYYY"`` or ``""``), ``type`` (``"2"`` or ``""``),
-  ``sub_type_reason`` (groups: usually one, sometimes none or several) and
-  ``voluntarily``/``cek`` (always null so far; on other DTEK sites a truthy
-  ``cek`` marks a house served by another operator). While a stabilization
-  outage is reported for a house of two groups, ``sub_type_reason`` holds the
-  group of that outage alone, from the answer that adds the outage to the one
-  that clears it (11 times from 2026-10-22 to 10-29; emergency outages of the
-  same house left both groups listed): ``House.groups_partial``. Other DTEK
-  sites sometimes give a list of such objects for one house, one per outage. Next
-  to ``data`` come the ``show*`` flags the page uses to decide what to show:
-  ``showTableFact`` (the schedule for today and tomorrow), ``showTablePlan``
-  (the weekly schedule of possible outages; ``false`` on 2026-10-18),
-  ``showTableSchedule`` (the schedule block at all) and ``showCurOutageParam``
-  (the current outage of the house). ``fact`` and ``preset`` are
-  added only when ``updateFact`` is truthy in PHP (``""`` and ``"0"`` are
-  not) and differs from the current ``fact.update`` (``"dd.mm.YYYY HH:MM"``),
-  so that value works as a version.
-  Unknown settlements or streets give ``{"result": false, "text": "Error"}``.
-* ``fact`` is ``{"data": {day: {group: {hour: value}}}, "update": ...,
-  "today": day}`` with ``day`` the Unix time of local midnight; ``data`` is
-  ``[]`` when nothing is published. ``preset`` is ``{"data": {group:
-  {weekday: {hour: value}}}, "updateFact": ..., ...}`` with ISO weekdays.
-  Hour values are described in ``schedule.py``.
-* The mirror (``MIRROR_URL``) republishes ``fact`` and ``preset`` unchanged
-  next to ``lastUpdated`` (ISO, UTC). It has no address data. GitHub serves
-  it with an ``ETag`` and answers ``If-None-Match`` with HTTP 304.
+  [street, ...]}}``. ``method=getHomeNum`` takes the same city/street pairs as
+  the website and returns address records in ``data``.
+* DTEK DEM currently does not publish ``fact`` or ``preset`` schedules. A
+  record with a non-empty ``sub_type`` means the address has an outage; an
+  empty/missing ``data`` record means the address currently has power.
 """
 
 from __future__ import annotations
@@ -121,7 +93,7 @@ class DtekNotFoundError(DtekError):
 
 def build_user_agent(version: str | None = None) -> str:
     """Return the User-Agent sent to DTEK, with the integration version."""
-    product = f"ha-dtek-krem-outages/{version}" if version else "ha-dtek-krem-outages"
+    product = f"ha-dtek-dem-outages/{version}" if version else "ha-dtek-dem-outages"
     return f"HomeAssistant/{ha_version} {product} (+{PROJECT_URL})"
 
 
@@ -500,7 +472,7 @@ def _form_pairs(pairs: Iterable[tuple[str, str]]) -> dict[str, str]:
 
 
 class DtekClient:
-    """Minimal async client for the DTEK KREM ajax endpoint and the mirror."""
+    """Minimal async client for the DTEK DEM ajax endpoint and the mirror."""
 
     def __init__(
         self,

@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from custom_components.dtek_krem_outages.const import DOMAIN
+from custom_components.dtek_dem_outages.const import DOMAIN
 
 ROOT = Path(__file__).parents[1]
 INTEGRATION_DIR = ROOT / "custom_components" / DOMAIN

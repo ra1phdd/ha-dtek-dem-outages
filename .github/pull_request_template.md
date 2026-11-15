@@ -8,4 +8,4 @@
 - [ ] Нова поведінка покрита тестами в `tests/` (запити до ДТЕК — через `FakeDtek`)
 - [ ] Тексти UI: `strings.json` = `translations/en.json`, оновлені `uk.json` і `ru.json`
 - [ ] Зміни поведінки описані в `README.md` і `doc/README_en.md`
-- [ ] Для змін у `custom_components/dtek_krem_outages/`: піднято PATCH у `manifest.json` і додано секцію в `CHANGELOG.md`
+- [ ] Для змін у `custom_components/dtek_dem_outages/`: піднято PATCH у `manifest.json` і додано секцію в `CHANGELOG.md`

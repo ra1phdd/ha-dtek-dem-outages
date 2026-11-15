@@ -13,7 +13,7 @@ from pytest_homeassistant_custom_component.common import (
 )
 from pytest_homeassistant_custom_component.typing import ClientSessionGenerator
 
-from custom_components.dtek_krem_outages.const import (
+from custom_components.dtek_dem_outages.const import (
     CONF_EXCLUDED_GROUPS,
     CONF_GROUP,
     CONF_GROUP_MANUAL,

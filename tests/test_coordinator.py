@@ -14,7 +14,7 @@ from pytest_homeassistant_custom_component.common import (
     async_fire_time_changed,
 )
 
-from custom_components.dtek_krem_outages.const import (
+from custom_components.dtek_dem_outages.const import (
     CONF_EXCLUDED_GROUPS,
     CONF_EXTRA_GROUPS,
     CONF_GROUP,
@@ -109,6 +109,24 @@ async def test_setup_and_unload(
 
     assert await hass.config_entries.async_unload(mock_config_entry.entry_id)
     assert mock_config_entry.state is ConfigEntryState.NOT_LOADED
+
+
+async def test_dem_empty_response_means_power(
+    hass: HomeAssistant, fake_dtek: FakeDtek, mock_config_entry: MockConfigEntry
+) -> None:
+    """A successful DEM response without an address record means power is on."""
+    fake_dtek.houses = {}
+    mock_config_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        mock_config_entry,
+        data={**mock_config_entry.data, CONF_GROUP: ""},
+    )
+    await setup_entry(hass, mock_config_entry)
+
+    data = mock_config_entry.runtime_data.data
+    assert data.address_ok
+    assert data.address_outage is None
+    assert data.group == ""
 
 
 async def test_unchanged_version_skips_schedule(
