@@ -3,7 +3,11 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
-## [0.2.2] - 2026-11-15
+## [0.2.3] - 2026-11-15
+
+### Fixed
+- Address setup accepts custom settlement, street and house values when DTEK omits them because there is no current outage data.
+
 
 ### Changed
 - Renamed the Home Assistant integration domain to `dtek_dem_outages` and moved the integration package to `custom_components/dtek_dem_outages` as a separate DTEK DEM project.

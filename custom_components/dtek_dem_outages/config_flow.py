@@ -119,6 +119,13 @@ def match_choice(value: Any, choices: Iterable[str]) -> str | None:
     return None
 
 
+def _custom_value(value: Any) -> str | None:
+    """Return a non-empty user-entered value for a custom selector option."""
+    if not isinstance(value, str):
+        return None
+    return value.strip() or None
+
+
 def match_settlement(value: Any, streets: Mapping[str, list[str]]) -> str | None:
     """Return the settlement typed in ``value``, with or without its prefix.
 
@@ -393,7 +400,7 @@ class DtekKremConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             settlement = match_settlement(
                 user_input.get(CONF_SETTLEMENT), self._streets
-            )
+            ) or _custom_value(user_input.get(CONF_SETTLEMENT))
             if settlement is None:
                 errors[CONF_SETTLEMENT] = "unknown_settlement"
             else:
@@ -430,13 +437,18 @@ class DtekKremConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         if user_input is not None and CONF_STREET in user_input:
             label = match_street(user_input[CONF_STREET], choices)
-            if label is None:
-                errors[CONF_STREET] = "unknown_street"
-            else:
+            if label is not None:
                 address = choices[label]
                 if address != (self._settlement, self._street):
                     self._houses = None
                 self._settlement, self._street = address
+                return await self.async_step_house()
+            street = _custom_value(user_input.get(CONF_STREET))
+            if street is None:
+                errors[CONF_STREET] = "unknown_street"
+            else:
+                self._houses = None
+                self._street = street
                 return await self.async_step_house()
 
         return self.async_show_form(
@@ -463,7 +475,9 @@ class DtekKremConfigFlow(ConfigFlow, domain=DOMAIN):
             try:
                 street = await client.async_get_street(settlement, street_name)
             except DtekNotFoundError:
-                errors["base"] = "no_houses"
+                # A valid DEM address with no current outage may be absent
+                # from the suggestions and the API response entirely.
+                self._houses = {}
             except DtekError as err:
                 _LOGGER.debug("Cannot load the houses from DTEK: %s", err)
                 errors["base"] = "cannot_connect"
@@ -471,10 +485,7 @@ class DtekKremConfigFlow(ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Unexpected error while loading the houses")
                 errors["base"] = "unknown"
             else:
-                if street.houses:
-                    self._houses = street.houses
-                else:
-                    errors["base"] = "no_houses"
+                self._houses = street.houses
         if self._houses is None:
             # Submitting again retries; going back needs a new flow.
             return self.async_show_form(
@@ -486,6 +497,7 @@ class DtekKremConfigFlow(ConfigFlow, domain=DOMAIN):
 
         if user_input is not None and CONF_HOUSE in user_input:
             house = match_choice(user_input[CONF_HOUSE], self._houses)
+            house = house or _custom_value(user_input.get(CONF_HOUSE))
             if house is None:
                 errors[CONF_HOUSE] = "unknown_house"
             else:
@@ -493,7 +505,8 @@ class DtekKremConfigFlow(ConfigFlow, domain=DOMAIN):
                 self._name = (user_input.get(CONF_NAME) or "").strip() or None
                 if user_input.get(CONF_LANGUAGE) in LANGUAGES:
                     self._language = user_input[CONF_LANGUAGE]
-                self._groups = self._houses[house].groups
+                house_data = self._houses.get(house)
+                self._groups = house_data.groups if house_data is not None else []
                 if not self._groups:
                     # DTEK DEM has no schedule groups; the address itself is
                     # enough to determine whether an outage is reported.
@@ -501,7 +514,7 @@ class DtekKremConfigFlow(ConfigFlow, domain=DOMAIN):
                 if len(self._groups) != 1:
                     return await self.async_step_group()
                 # During a stabilization outage DTEK lists its group alone.
-                if self._houses[house].groups_partial:
+                if house_data is not None and house_data.groups_partial:
                     return await self.async_step_group_outage()
                 return await self._async_finish(self._groups[0], manual=False)
 

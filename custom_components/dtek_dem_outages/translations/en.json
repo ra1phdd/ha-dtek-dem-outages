@@ -8,7 +8,7 @@
           "settlement": "Settlement"
         },
         "data_description": {
-          "settlement": "City, town or village, e.g. \"м. Бориспіль\"."
+          "settlement": "City, town or village. Enter it manually if DTEK does not list the place because there is no current outage."
         }
       },
       "street": {
@@ -18,7 +18,7 @@
           "street": "Street"
         },
         "data_description": {
-          "street": "Start typing the name, \"вул.\"/\"пров.\" can be left out. Streets DTEK lists under another spelling of the settlement (with or without \"с.\", \"смт\") have it in brackets. Villages without street names have \"Без вулиці\"."
+          "street": "Enter or start typing the name, \"вул.\"/\"пров.\" can be left out. Streets DTEK lists under another spelling of the settlement (with or without \"с.\", \"смт\") have it in brackets. Villages without street names have \"Без вулиці\"."
         }
       },
       "house": {
@@ -30,7 +30,7 @@
           "language": "Language of entity names"
         },
         "data_description": {
-          "house": "As listed by DTEK, e.g. \"43\", \"8 а\" or \"1/2\".",
+          "house": "Enter the house number manually if it is not listed by DTEK; examples: \"43\", \"8 а\" or \"1/2\".",
           "name": "Leave empty to use the address.",
           "language": "Names of the entities and calendar events, whatever the language of Home Assistant. Entity IDs stay in English."
         }

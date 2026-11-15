@@ -295,17 +295,36 @@ async def test_house_without_group_creates_address_entry(
     assert result["data"][CONF_GROUP_MANUAL] is False
 
 
-async def test_unknown_values(hass: HomeAssistant, fake_dtek: FakeDtek) -> None:
-    """Typed values that are not in the lists are rejected."""
+async def test_empty_address_values_are_rejected(
+    hass: HomeAssistant, fake_dtek: FakeDtek
+) -> None:
+    """Empty address fields are rejected while arbitrary non-empty values work."""
     result = await start(hass)
-    result = await submit(hass, result, {CONF_SETTLEMENT: "м. Київ"})
+    result = await submit(hass, result, {CONF_SETTLEMENT: ""})
     assert result["errors"] == {CONF_SETTLEMENT: "unknown_settlement"}
     result = await submit(hass, result, {CONF_SETTLEMENT: SETTLEMENT})
-    result = await submit(hass, result, {CONF_STREET: "вул. Нова"})
+    result = await submit(hass, result, {CONF_STREET: ""})
     assert result["errors"] == {CONF_STREET: "unknown_street"}
     result = await submit(hass, result, {CONF_STREET: STREET})
-    result = await submit(hass, result, {CONF_HOUSE: "999"})
+    result = await submit(hass, result, {CONF_HOUSE: ""})
     assert result["errors"] == {CONF_HOUSE: "unknown_house"}
+
+
+async def test_custom_address_values_are_accepted(
+    hass: HomeAssistant, fake_dtek: FakeDtek
+) -> None:
+    """A city, street and house absent from DTEK suggestions can be entered."""
+    result = await start(hass)
+    result = await submit(hass, result, {CONF_SETTLEMENT: "м. Слов'янськ"})
+    assert result["step_id"] == "street"
+    result = await submit(hass, result, {CONF_STREET: "ул. Левадна (Первокінна)"})
+    assert result["step_id"] == "house"
+    result = await submit(hass, result, {CONF_HOUSE: "12"})
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_SETTLEMENT] == "м. Слов'янськ"
+    assert result["data"][CONF_STREET] == "ул. Левадна (Первокінна)"
+    assert result["data"][CONF_HOUSE] == "12"
+    assert result["data"][CONF_GROUP] == ""
 
 
 async def test_cannot_connect_then_recovers(
@@ -333,13 +352,18 @@ async def test_cannot_connect_then_recovers(
     assert not result["errors"]
 
 
-async def test_street_without_houses(hass: HomeAssistant, fake_dtek: FakeDtek) -> None:
-    """A street DTEK knows nothing about shows an error."""
+async def test_street_without_houses_allows_custom_house(
+    hass: HomeAssistant, fake_dtek: FakeDtek
+) -> None:
+    """A street without outage records still accepts a custom house number."""
     fake_dtek.houses = {}
     result = await start(hass)
     result = await submit(hass, result, {CONF_SETTLEMENT: SETTLEMENT})
     result = await submit(hass, result, {CONF_STREET: STREET})
-    assert result["errors"] == {"base": "no_houses"}
+    assert result["step_id"] == "house"
+    result = await submit(hass, result, {CONF_HOUSE: "12"})
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_HOUSE] == "12"
 
 
 async def test_duplicate(
