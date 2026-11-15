@@ -3,15 +3,18 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
-## [0.2.3] - 2026-11-15
-
-### Fixed
-- Address setup accepts custom settlement, street and house values when DTEK omits them because there is no current outage data.
-
+## [0.2.4] - 2026-11-15
 
 ### Changed
-- Renamed the Home Assistant integration domain to `dtek_dem_outages` and moved the integration package to `custom_components/dtek_dem_outages` as a separate DTEK DEM project.
+- Removed all hourly/weekly schedule functionality, groups, schedule calendars, schedule mirror fallback, schedule service, and schedule warning settings/events.
+- The integration now exposes only current emergency outages for a configured settlement, street and house.
 
+### Fixed
+- A successful DEM lookup that returns no current outage no longer triggers a mirror 404 setup failure; the address is treated as having power.
+- Address setup accepts custom settlement, street and house values when DTEK omits them because there is no current outage data.
+
+### Removed
+- Warnings before scheduled outage start and before scheduled outage end/power restoration.
 
 ## [0.2.1] - 2026-11-15
 

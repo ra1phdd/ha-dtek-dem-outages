@@ -2,288 +2,104 @@
   "config": {
     "step": {
       "user": {
-        "title": "Населений пункт",
-        "description": "Інформація про поточні відключення ДТЕК Донецькі електромережі. Оберіть адресу так само, як на dtek-dem.com.ua; почніть вводити назву для пошуку.",
-        "data": {
-          "settlement": "Населений пункт"
-        },
-        "data_description": {
-          "settlement": "Місто, селище або село, наприклад «м. Бориспіль»."
-        }
+        "title": "Settlement",
+        "description": "Current emergency outage information from DTEK Donetsk Electric Networks.",
+        "data": {"settlement": "Settlement"},
+        "data_description": {"settlement": "City, town or village. You may enter it manually if DTEK does not list it."}
       },
       "street": {
-        "title": "Вулиця",
-        "description": "Вулиці: {settlement}.",
-        "data": {
-          "street": "Вулиця"
-        },
-        "data_description": {
-          "street": "Введіть або почніть вводити назву, «вул.»/«пров.» можна не писати. Вулиці, які ДТЕК записав під іншим написанням населеного пункту (з «с.», «смт» чи без), мають його в дужках. Для сіл без назв вулиць є варіант «Без вулиці»."
-        }
+        "title": "Street",
+        "description": "Street in {settlement}.",
+        "data": {"street": "Street"},
+        "data_description": {"street": "You may enter the street manually if it is not listed."}
       },
       "house": {
-        "title": "Будинок",
-        "description": "Будинки: {settlement}, {street}.",
+        "title": "House",
+        "description": "House at {settlement}, {street}.",
         "data": {
-          "house": "Номер будинку",
-          "name": "Назва",
-          "language": "Мова назв сутностей"
+          "house": "House number",
+          "name": "Name",
+          "language": "Language of entity names"
         },
         "data_description": {
-          "house": "Введіть номер будинку вручну, якщо його немає у списку ДТЕК; наприклад: «43», «8 а» або «1/2».",
-          "name": "Залиште порожнім, щоб використати адресу.",
-          "language": "Назви сутностей і подій календаря незалежно від мови Home Assistant. Ідентифікатори сутностей лишаються англійськими."
-        }
-      },
-      "group": {
-        "title": "Черга",
-        "description": "ДТЕК не вказує для адреси {settlement}, {street}, {house} рівно одну чергу (у списку: {groups}). Оберіть основну чергу, графік якої відстежувати; сайт ДТЕК показує її після введення адреси. Інші черги будинку показуються в календарі «Інші черги», а в параметрах їх можна об'єднати з основною.",
-        "data": {
-          "group": "Черга"
-        }
-      },
-      "group_outage": {
-        "title": "Черга",
-        "description": "ДТЕК вказує для адреси {settlement}, {street}, {house} стабілізаційне відключення і, поки воно триває, показує лише чергу цього відключення ({groups}): у будинку можуть бути й інші черги. Оберіть основну чергу, графік якої відстежувати. Якщо не впевнені, залиште {groups}: тоді запис іде за чергою, яку вказує ДТЕК, а інші черги будинку відстежуються, щойно ДТЕК знову їх покаже.",
-        "data": {
-          "group": "Черга"
+          "house": "You may enter the house number manually if it is not listed.",
+          "name": "Leave empty to use the address.",
+          "language": "Language used for entity names."
         }
       },
       "unreachable": {
-        "title": "ДТЕК недоступний",
-        "description": "Не вдалося отримати від ДТЕК список населених пунктів. Спробуйте пізніше або відстежуйте чергу без адреси: графік тоді береться з публічного дзеркала github.com/Baskerville42/outage-data-ua, а даних адреси (визначення черги, відключень за адресою) не буде. Адресу можна додати згодом через «Переналаштувати».",
-        "menu_options": {
-          "user": "Спробувати ще раз",
-          "group_only": "Відстежувати чергу без адреси"
-        }
-      },
-      "group_only": {
-        "title": "Черга без адреси",
-        "description": "Графік черги береться з публічного дзеркала даних ДТЕК. Свою чергу можна дізнатися на dtek-dem.com.ua, ввівши адресу.",
-        "data": {
-          "group": "Черга",
-          "name": "Назва",
-          "language": "Мова назв сутностей"
-        },
-        "data_description": {
-          "group": "Ваша черга, наприклад 3.1.",
-          "name": "Залиште порожнім, щоб назвати «Черга 3.1».",
-          "language": "Назви сутностей і подій календаря незалежно від мови Home Assistant. Ідентифікатори сутностей лишаються англійськими."
-        }
+        "title": "DTEK is unavailable",
+        "description": "The settlement list could not be loaded from DTEK. Try again later.",
+        "menu_options": {"user": "Try again"}
       }
     },
     "error": {
-      "cannot_connect": "Не вдалося підключитися до ДТЕК. Натисніть «Надіслати», щоб спробувати ще раз.",
-      "unknown": "Неочікувана помилка.",
-      "unknown_settlement": "Оберіть населений пункт зі списку.",
-      "unknown_street": "Оберіть вулицю зі списку.",
-      "unknown_house": "Оберіть будинок зі списку.",
-      "no_houses": "ДТЕК не має будинків для цієї вулиці. Натисніть «Надіслати», щоб спробувати ще раз."
+      "cannot_connect": "Failed to connect to DTEK. Submit again to retry.",
+      "unknown": "Unexpected error.",
+      "unknown_settlement": "Enter a settlement.",
+      "unknown_street": "Enter a street.",
+      "unknown_house": "Enter a house number."
     },
     "abort": {
-      "already_configured": "Цю адресу вже додано.",
-      "group_configured": "Цю чергу без адреси вже додано.",
-      "reconfigure_successful": "Налаштування успішно змінено."
+      "already_configured": "This address is already configured.",
+      "reconfigure_successful": "Re-configuration was successful."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Параметри DTEK DEM Outages",
+        "title": "DTEK DEM Outages options",
         "data": {
-          "update_interval": "Інтервал оновлення",
-          "warn_before_start": "Попереджати перед початком відключення",
-          "warn_before_end": "Попереджати перед закінченням відключення (поверненням світла)",
-          "use_mirror": "Використовувати запасне джерело",
-          "show_possible": "Показувати можливі відключення в календарі",
-          "groups_mode": "Інші черги адреси в графіку",
-          "excluded_groups": "Не враховувати черги",
-          "extra_groups": "Інші черги",
-          "language": "Мова назв сутностей"
+          "update_interval": "Update interval",
+          "language": "Language of entity names"
         },
         "data_description": {
-          "update_interval": "Хвилин між запитами до ДТЕК (щонайменше 2).",
-          "warn_before_start": "Позначте, за скільки хвилин до відключення за графіком надсилати подію «outage_warning», а до можливого відключення — «possible_outage_warning». Нічого не позначено: вимкнено.",
-          "warn_before_end": "Позначте, за скільки хвилин до закінчення відключення за графіком надсилати подію «outage_end_warning». Нічого не позначено: вимкнено.",
-          "use_mirror": "Коли ДТЕК недоступний, брати графік з публічного дзеркала github.com/Baskerville42/outage-data-ua.",
-          "show_possible": "Заповнювати дні без фактичного графіка тижневим графіком можливих відключень, поки ДТЕК показує його на своєму сайті.",
-          "groups_mode": "Що враховують датчики, події, попередження й календар «Відключення», коли ДТЕК вказує для будинку кілька черг. Те, що вже минуло, не переписується.",
-          "excluded_groups": "Черги, які ДТЕК вказує для будинку, але які не відстежуються, наприклад якщо ви знаєте, що ваш під'їзд на основній черзі.",
-          "extra_groups": "Черги, які відстежуються разом з основною; їхній графік теж береться з дзеркала.",
-          "language": "Назви сутностей і подій календаря незалежно від мови Home Assistant. Ідентифікатори сутностей лишаються англійськими."
+          "update_interval": "Minutes between requests to DTEK (at least 2).",
+          "language": "Language used for entity names."
         }
-      }
-    }
-  },
-  "selector": {
-    "warning_minutes": {
-      "options": {
-        "1": "1 хв",
-        "5": "5 хв",
-        "10": "10 хв",
-        "15": "15 хв",
-        "30": "30 хв",
-        "60": "60 хв",
-        "120": "120 хв"
-      }
-    },
-    "groups_mode": {
-      "options": {
-        "main": "Лише основна черга (інші — в календарі «Інші черги»)",
-        "any": "Відключення, коли вимкнена будь-яка черга",
-        "all": "Відключення, коли вимкнені всі черги; можливе — коли частина"
       }
     }
   },
   "entity": {
     "binary_sensor": {
-      "address_outage": {
-        "name": "Відключення за адресою"
-      },
-      "scheduled_outage": {
-        "name": "Відключення за графіком"
-      }
-    },
-    "calendar": {
-      "outages": {
-        "name": "Відключення"
-      },
-      "other_groups": {
-        "name": "Інші черги"
-      }
+      "address_outage": {"name": "Emergency outage"}
     },
     "event": {
       "events": {
-        "name": "Події відключень",
+        "name": "Emergency outage events",
         "state_attributes": {
-          "event_type": {
-            "state": {
-              "schedule_published": "Опубліковано графік",
-              "schedule_changed": "Графік змінено",
-              "outage_warning": "Попередження про відключення",
-              "possible_outage_warning": "Попередження про можливе відключення",
-              "outage_end_warning": "Скоро кінець відключення",
-              "outage_started": "Відключення почалося",
-              "outage_ended": "Відключення закінчилося",
-              "address_outage": "Відключення за адресою",
-              "group_changed": "Змінено чергу",
-              "groups_changed": "Змінено черги адреси"
-            }
-          }
+          "event_type": {"state": {"address_outage": "Emergency outage"}}
         }
       }
     },
     "sensor": {
       "address_status": {
-        "name": "Стан адреси",
-        "state": {
-          "none": "Без відключень",
-          "stabilization": "Стабілізаційне відключення",
-          "emergency": "Аварійне відключення",
-          "planned": "Планові роботи",
-          "other": "Інше відключення"
-        }
+        "name": "Address status",
+        "state": {"none": "No emergency outage", "emergency": "Emergency outage"}
       },
       "connection": {
-        "name": "Зв'язок з ДТЕК",
-        "state": {
-          "ok": "Працює",
-          "mirror": "Запасне джерело",
-          "offline": "Немає зв'язку, збережені дані"
-        }
+        "name": "DTEK connection",
+        "state": {"ok": "OK", "offline": "Offline"}
       },
-      "group": {
-        "name": "Черга"
-      },
-      "groups_status": {
-        "name": "Стан черг",
-        "state": {
-          "none": "Без відключення",
-          "main": "Лише основна черга",
-          "main_some": "Основна й частина інших",
-          "main_all": "Основна й усі інші",
-          "others_some": "Лише частина інших",
-          "others_all": "Лише всі інші"
-        }
-      },
-      "last_update": {
-        "name": "Останнє успішне оновлення"
-      },
-      "next_outage": {
-        "name": "Наступне відключення"
-      },
-      "outage_end": {
-        "name": "Кінець поточного відключення"
-      },
-      "outages_today": {
-        "name": "Відключення сьогодні"
-      },
-      "outages_tomorrow": {
-        "name": "Відключення завтра"
-      },
-      "restoration": {
-        "name": "Орієнтовне відновлення"
-      },
-      "schedule_updated": {
-        "name": "Графік оновлено"
-      }
+      "last_update": {"name": "Last update"},
+      "restoration": {"name": "Estimated restoration"}
     }
   },
   "exceptions": {
-    "update_failed": {
-      "message": "Помилка отримання графіка відключень: {error}"
-    },
-    "entry_not_found": {
-      "message": "Немає запису DTEK DEM Outages з ID {entry_id}."
-    },
-    "entry_not_loaded": {
-      "message": "Запис DTEK DEM Outages {entry_id} не завантажено."
-    },
-    "no_loaded_entries": {
-      "message": "Немає завантажених записів DTEK DEM Outages."
-    },
-    "refresh_failed": {
-      "message": "Не вдалося оновити: {entries}."
-    }
-  },
-  "issues": {
-    "group_not_listed": {
-      "title": "ДТЕК вказує інші черги для «{title}»",
-      "fix_flow": {
-        "step": {
-          "change": {
-            "title": "Основна черга «{title}»",
-            "description": "Для «{title}» ДТЕК кілька відповідей поспіль вказує черги {groups}, без основної черги запису {group}. Якщо ДТЕК переніс будинок, оберіть чергу, яку відстежувати: минулий графік лишиться, а графік нової черги буде запитано одразу. Щоб лишити {group}, закрийте це вікно; повідомлення можна проігнорувати, а саме воно зникне, щойно ДТЕК знову вкаже {group}.",
-            "data": {
-              "group": "Основна черга"
-            }
-          }
-        },
-        "abort": {
-          "entry_not_loaded": "Запис не завантажено. Спробуйте, коли він завантажиться.",
-          "group_listed": "ДТЕК знову вказує основну чергу, змінювати нічого не треба."
-        }
-      }
-    }
+    "update_failed": {"message": "Error fetching the current emergency outage: {error}"},
+    "entry_not_found": {"message": "No DTEK DEM Outages entry with ID {entry_id}."},
+    "entry_not_loaded": {"message": "DTEK DEM Outages entry {entry_id} is not loaded."},
+    "no_loaded_entries": {"message": "No DTEK DEM Outages entries are loaded."},
+    "refresh_failed": {"message": "Updating failed for: {entries}."}
   },
   "services": {
     "refresh": {
-      "name": "Оновити",
-      "description": "Негайно отримує графік і стан адреси. Запис, оновлений менш ніж хвилину тому, лишає результат того оновлення.",
+      "name": "Refresh",
+      "description": "Fetches the current emergency outage status.",
       "fields": {
         "config_entry_id": {
-          "name": "Запис",
-          "description": "Запис для оновлення. Залиште порожнім, щоб оновити всі."
-        }
-      }
-    },
-    "get_schedule": {
-      "name": "Отримати графік",
-      "description": "Повертає збережений графік по днях, тижневий графік можливих відключень і відключення, яке ДТЕК вказує для адреси.",
-      "fields": {
-        "config_entry_id": {
-          "name": "Запис",
-          "description": "Запис для читання. Залиште порожнім, щоб отримати всі."
+          "name": "Entry",
+          "description": "Entry to refresh. Leave empty to refresh all entries."
         }
       }
     }

@@ -2,288 +2,104 @@
   "config": {
     "step": {
       "user": {
-        "title": "Населённый пункт",
-        "description": "Информация о текущих отключениях ДТЭК Донецкие электросети. Выберите адрес так же, как на dtek-dem.com.ua; начните вводить название для поиска.",
-        "data": {
-          "settlement": "Населённый пункт"
-        },
-        "data_description": {
-          "settlement": "Город, посёлок или село, например «м. Бориспіль»."
-        }
+        "title": "Settlement",
+        "description": "Current emergency outage information from DTEK Donetsk Electric Networks.",
+        "data": {"settlement": "Settlement"},
+        "data_description": {"settlement": "City, town or village. You may enter it manually if DTEK does not list it."}
       },
       "street": {
-        "title": "Улица",
-        "description": "Улицы: {settlement}.",
-        "data": {
-          "street": "Улица"
-        },
-        "data_description": {
-          "street": "Введите или начните вводить название, «вул.»/«пров.» можно не писать. Улицы, которые ДТЭК записал под другим написанием населённого пункта (с «с.», «смт» или без), содержат его в скобках. Для сёл без названий улиц есть вариант «Без вулиці»."
-        }
+        "title": "Street",
+        "description": "Street in {settlement}.",
+        "data": {"street": "Street"},
+        "data_description": {"street": "You may enter the street manually if it is not listed."}
       },
       "house": {
-        "title": "Дом",
-        "description": "Дома: {settlement}, {street}.",
+        "title": "House",
+        "description": "House at {settlement}, {street}.",
         "data": {
-          "house": "Номер дома",
-          "name": "Название",
-          "language": "Язык названий объектов"
+          "house": "House number",
+          "name": "Name",
+          "language": "Language of entity names"
         },
         "data_description": {
-          "house": "Введите номер дома вручную, если его нет в списке ДТЭК; например: «43», «8 а» или «1/2».",
-          "name": "Оставьте пустым, чтобы использовать адрес.",
-          "language": "Названия объектов и событий календаря независимо от языка Home Assistant. Идентификаторы объектов остаются английскими."
-        }
-      },
-      "group": {
-        "title": "Очередь",
-        "description": "ДТЭК не указывает для адреса {settlement}, {street}, {house} ровно одну очередь (в списке: {groups}). Выберите основную очередь, график которой отслеживать; сайт ДТЭК показывает её после ввода адреса. Другие очереди дома показываются в календаре «Другие очереди», а в параметрах их можно объединить с основной.",
-        "data": {
-          "group": "Очередь"
-        }
-      },
-      "group_outage": {
-        "title": "Очередь",
-        "description": "ДТЭК указывает для адреса {settlement}, {street}, {house} стабилизационное отключение и, пока оно идёт, показывает только очередь этого отключения ({groups}): в доме могут быть и другие очереди. Выберите основную очередь, график которой отслеживать. Если не уверены, оставьте {groups}: тогда запись следует за очередью, которую указывает ДТЭК, а другие очереди дома отслеживаются, как только ДТЭК снова их покажет.",
-        "data": {
-          "group": "Очередь"
+          "house": "You may enter the house number manually if it is not listed.",
+          "name": "Leave empty to use the address.",
+          "language": "Language used for entity names."
         }
       },
       "unreachable": {
-        "title": "ДТЭК недоступен",
-        "description": "Не удалось получить от ДТЭК список населённых пунктов. Попробуйте позже или отслеживайте очередь без адреса: график тогда берётся из публичного зеркала github.com/Baskerville42/outage-data-ua, а данных адреса (определения очереди, отключений по адресу) не будет. Адрес можно добавить позже через «Перенастроить».",
-        "menu_options": {
-          "user": "Попробовать снова",
-          "group_only": "Отслеживать очередь без адреса"
-        }
-      },
-      "group_only": {
-        "title": "Очередь без адреса",
-        "description": "График очереди берётся из публичного зеркала данных ДТЭК. Свою очередь можно узнать на dtek-dem.com.ua, введя адрес.",
-        "data": {
-          "group": "Очередь",
-          "name": "Название",
-          "language": "Язык названий объектов"
-        },
-        "data_description": {
-          "group": "Ваша очередь, например 3.1.",
-          "name": "Оставьте пустым, чтобы назвать «Очередь 3.1».",
-          "language": "Названия объектов и событий календаря независимо от языка Home Assistant. Идентификаторы объектов остаются английскими."
-        }
+        "title": "DTEK is unavailable",
+        "description": "The settlement list could not be loaded from DTEK. Try again later.",
+        "menu_options": {"user": "Try again"}
       }
     },
     "error": {
-      "cannot_connect": "Не удалось подключиться к ДТЭК. Нажмите «Отправить», чтобы повторить попытку.",
-      "unknown": "Непредвиденная ошибка.",
-      "unknown_settlement": "Выберите населённый пункт из списка.",
-      "unknown_street": "Выберите улицу из списка.",
-      "unknown_house": "Выберите дом из списка.",
-      "no_houses": "У ДТЭК нет домов для этой улицы. Нажмите «Отправить», чтобы повторить попытку."
+      "cannot_connect": "Failed to connect to DTEK. Submit again to retry.",
+      "unknown": "Unexpected error.",
+      "unknown_settlement": "Enter a settlement.",
+      "unknown_street": "Enter a street.",
+      "unknown_house": "Enter a house number."
     },
     "abort": {
-      "already_configured": "Этот адрес уже добавлен.",
-      "group_configured": "Эта очередь без адреса уже добавлена.",
-      "reconfigure_successful": "Настройки успешно изменены."
+      "already_configured": "This address is already configured.",
+      "reconfigure_successful": "Re-configuration was successful."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Параметры DTEK DEM Outages",
+        "title": "DTEK DEM Outages options",
         "data": {
-          "update_interval": "Интервал обновления",
-          "warn_before_start": "Предупреждать перед началом отключения",
-          "warn_before_end": "Предупреждать перед окончанием отключения (возвращением света)",
-          "use_mirror": "Использовать резервный источник",
-          "show_possible": "Показывать возможные отключения в календаре",
-          "groups_mode": "Другие очереди адреса в графике",
-          "excluded_groups": "Не учитывать очереди",
-          "extra_groups": "Другие очереди",
-          "language": "Язык названий объектов"
+          "update_interval": "Update interval",
+          "language": "Language of entity names"
         },
         "data_description": {
-          "update_interval": "Минут между запросами к ДТЭК (не меньше 2).",
-          "warn_before_start": "Отметьте, за сколько минут до отключения по графику отправлять событие «outage_warning», а до возможного отключения — «possible_outage_warning». Ничего не отмечено: выключено.",
-          "warn_before_end": "Отметьте, за сколько минут до окончания отключения по графику отправлять событие «outage_end_warning». Ничего не отмечено: выключено.",
-          "use_mirror": "Когда ДТЭК недоступен, брать график из публичного зеркала github.com/Baskerville42/outage-data-ua.",
-          "show_possible": "Заполнять дни без фактического графика недельным графиком возможных отключений, пока ДТЭК показывает его на своём сайте.",
-          "groups_mode": "Что учитывают датчики, события, предупреждения и календарь «Отключения», когда ДТЭК указывает для дома несколько очередей. Прошедшее не переписывается.",
-          "excluded_groups": "Очереди, которые ДТЭК указывает для дома, но которые не отслеживаются, например если вы знаете, что ваш подъезд на основной очереди.",
-          "extra_groups": "Очереди, которые отслеживаются вместе с основной; их график тоже берётся из зеркала.",
-          "language": "Названия объектов и событий календаря независимо от языка Home Assistant. Идентификаторы объектов остаются английскими."
+          "update_interval": "Minutes between requests to DTEK (at least 2).",
+          "language": "Language used for entity names."
         }
-      }
-    }
-  },
-  "selector": {
-    "warning_minutes": {
-      "options": {
-        "1": "1 мин",
-        "5": "5 мин",
-        "10": "10 мин",
-        "15": "15 мин",
-        "30": "30 мин",
-        "60": "60 мин",
-        "120": "120 мин"
-      }
-    },
-    "groups_mode": {
-      "options": {
-        "main": "Только основная очередь (другие — в календаре «Другие очереди»)",
-        "any": "Отключение, когда выключена любая очередь",
-        "all": "Отключение, когда выключены все очереди; возможное — когда часть"
       }
     }
   },
   "entity": {
     "binary_sensor": {
-      "address_outage": {
-        "name": "Отключение по адресу"
-      },
-      "scheduled_outage": {
-        "name": "Отключение по графику"
-      }
-    },
-    "calendar": {
-      "outages": {
-        "name": "Отключения"
-      },
-      "other_groups": {
-        "name": "Другие очереди"
-      }
+      "address_outage": {"name": "Emergency outage"}
     },
     "event": {
       "events": {
-        "name": "События отключений",
+        "name": "Emergency outage events",
         "state_attributes": {
-          "event_type": {
-            "state": {
-              "schedule_published": "Опубликован график",
-              "schedule_changed": "График изменён",
-              "outage_warning": "Предупреждение об отключении",
-              "possible_outage_warning": "Предупреждение о возможном отключении",
-              "outage_end_warning": "Скоро конец отключения",
-              "outage_started": "Отключение началось",
-              "outage_ended": "Отключение закончилось",
-              "address_outage": "Отключение по адресу",
-              "group_changed": "Изменена очередь",
-              "groups_changed": "Изменены очереди адреса"
-            }
-          }
+          "event_type": {"state": {"address_outage": "Emergency outage"}}
         }
       }
     },
     "sensor": {
       "address_status": {
-        "name": "Состояние адреса",
-        "state": {
-          "none": "Без отключений",
-          "stabilization": "Стабилизационное отключение",
-          "emergency": "Аварийное отключение",
-          "planned": "Плановые работы",
-          "other": "Другое отключение"
-        }
+        "name": "Address status",
+        "state": {"none": "No emergency outage", "emergency": "Emergency outage"}
       },
       "connection": {
-        "name": "Связь с ДТЭК",
-        "state": {
-          "ok": "Работает",
-          "mirror": "Резервный источник",
-          "offline": "Нет связи, сохранённые данные"
-        }
+        "name": "DTEK connection",
+        "state": {"ok": "OK", "offline": "Offline"}
       },
-      "group": {
-        "name": "Очередь"
-      },
-      "groups_status": {
-        "name": "Состояние очередей",
-        "state": {
-          "none": "Без отключения",
-          "main": "Только основная очередь",
-          "main_some": "Основная и часть других",
-          "main_all": "Основная и все другие",
-          "others_some": "Только часть других",
-          "others_all": "Только все другие"
-        }
-      },
-      "last_update": {
-        "name": "Последнее успешное обновление"
-      },
-      "next_outage": {
-        "name": "Следующее отключение"
-      },
-      "outage_end": {
-        "name": "Конец текущего отключения"
-      },
-      "outages_today": {
-        "name": "Отключения сегодня"
-      },
-      "outages_tomorrow": {
-        "name": "Отключения завтра"
-      },
-      "restoration": {
-        "name": "Ориентировочное восстановление"
-      },
-      "schedule_updated": {
-        "name": "График обновлён"
-      }
+      "last_update": {"name": "Last update"},
+      "restoration": {"name": "Estimated restoration"}
     }
   },
   "exceptions": {
-    "update_failed": {
-      "message": "Ошибка получения графика отключений: {error}"
-    },
-    "entry_not_found": {
-      "message": "Нет записи DTEK DEM Outages с ID {entry_id}."
-    },
-    "entry_not_loaded": {
-      "message": "Запись DTEK DEM Outages {entry_id} не загружена."
-    },
-    "no_loaded_entries": {
-      "message": "Нет загруженных записей DTEK DEM Outages."
-    },
-    "refresh_failed": {
-      "message": "Не удалось обновить: {entries}."
-    }
-  },
-  "issues": {
-    "group_not_listed": {
-      "title": "ДТЭК указывает другие очереди для «{title}»",
-      "fix_flow": {
-        "step": {
-          "change": {
-            "title": "Основная очередь «{title}»",
-            "description": "Для «{title}» ДТЭК несколько ответов подряд указывает очереди {groups}, без основной очереди записи {group}. Если ДТЭК перенёс дом, выберите очередь, которую отслеживать: прошлый график останется, а график новой очереди будет запрошен сразу. Чтобы оставить {group}, закройте это окно; сообщение можно игнорировать, а само оно исчезнет, как только ДТЭК снова укажет {group}.",
-            "data": {
-              "group": "Основная очередь"
-            }
-          }
-        },
-        "abort": {
-          "entry_not_loaded": "Запись не загружена. Попробуйте, когда она загрузится.",
-          "group_listed": "ДТЭК снова указывает основную очередь, менять ничего не нужно."
-        }
-      }
-    }
+    "update_failed": {"message": "Error fetching the current emergency outage: {error}"},
+    "entry_not_found": {"message": "No DTEK DEM Outages entry with ID {entry_id}."},
+    "entry_not_loaded": {"message": "DTEK DEM Outages entry {entry_id} is not loaded."},
+    "no_loaded_entries": {"message": "No DTEK DEM Outages entries are loaded."},
+    "refresh_failed": {"message": "Updating failed for: {entries}."}
   },
   "services": {
     "refresh": {
-      "name": "Обновить",
-      "description": "Немедленно получает график и состояние адреса. Запись, обновлённая меньше минуты назад, оставляет результат того обновления.",
+      "name": "Refresh",
+      "description": "Fetches the current emergency outage status.",
       "fields": {
         "config_entry_id": {
-          "name": "Запись",
-          "description": "Запись для обновления. Оставьте пустым, чтобы обновить все."
-        }
-      }
-    },
-    "get_schedule": {
-      "name": "Получить график",
-      "description": "Возвращает сохранённый график по дням, недельный график возможных отключений и отключение, которое ДТЭК указывает для адреса.",
-      "fields": {
-        "config_entry_id": {
-          "name": "Запись",
-          "description": "Запись для чтения. Оставьте пустым, чтобы получить все."
+          "name": "Entry",
+          "description": "Entry to refresh. Leave empty to refresh all entries."
         }
       }
     }

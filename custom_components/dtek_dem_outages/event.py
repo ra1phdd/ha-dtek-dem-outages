@@ -26,11 +26,7 @@ async def async_setup_entry(
 
 
 class OutageEvent(DtekEntity, EventEntity):
-    """Fires for schedule changes, warnings, outage edges and address outages."""
-
-    _unrecorded_attributes = frozenset(
-        {"outages", "previous_outages", "possible", "schedule"}
-    )
+    """Fires when DTEK reports a current outage at the address."""
 
     def __init__(self, coordinator: DtekCoordinator) -> None:
         """Initialize the event entity."""

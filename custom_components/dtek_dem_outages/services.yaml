@@ -5,11 +5,3 @@ refresh:
       selector:
         config_entry:
           integration: dtek_dem_outages
-
-get_schedule:
-  fields:
-    config_entry_id:
-      required: false
-      selector:
-        config_entry:
-          integration: dtek_dem_outages

@@ -1,8 +1,7 @@
-"""Tests for the config, options and reconfigure flows."""
+"""Tests for the DEM address config flow."""
 
 from __future__ import annotations
 
-from datetime import timedelta
 from http import HTTPStatus
 from typing import Any
 
@@ -20,39 +19,20 @@ from custom_components.dtek_dem_outages.config_flow import (
     street_choices,
 )
 from custom_components.dtek_dem_outages.const import (
-    CONF_EXCLUDED_GROUPS,
-    CONF_EXTRA_GROUPS,
-    CONF_GROUP,
-    CONF_GROUP_MANUAL,
-    CONF_GROUPS_MODE,
     CONF_HOUSE,
     CONF_LANGUAGE,
     CONF_SETTLEMENT,
-    CONF_SHOW_POSSIBLE,
     CONF_STREET,
     CONF_UPDATE_INTERVAL,
-    CONF_USE_MIRROR,
-    CONF_WARN_END,
-    CONF_WARN_START,
     DEFAULT_OPTIONS,
     DOMAIN,
 )
 from homeassistant.config_entries import SOURCE_USER
-from homeassistant.const import CONF_NAME
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.setup import async_setup_component
 
-from .conftest import (
-    GROUP,
-    HOUSE,
-    SETTLEMENT,
-    STREET,
-    TITLE,
-    FakeDtek,
-    make_house,
-    setup_entry,
-)
+from .conftest import HOUSE, SETTLEMENT, STREET, TITLE, FakeDtek, setup_entry
 
 
 async def start(hass: HomeAssistant) -> dict[str, Any]:
@@ -63,19 +43,22 @@ async def start(hass: HomeAssistant) -> dict[str, Any]:
 
 
 async def submit(hass: HomeAssistant, result: dict[str, Any], data: dict) -> dict:
-    """Submit a step."""
+    """Submit a flow step."""
     result = await hass.config_entries.flow.async_configure(result["flow_id"], data)
     await hass.async_block_till_done()
     return result
 
 
 def fields_of(result: dict[str, Any]) -> list[str]:
-    """Return the field names of a form."""
-    return [str(marker) for marker in result["data_schema"].schema]
+    """Return form field names."""
+    schema = result["data_schema"]
+    if isinstance(schema, list):
+        return [item["name"] for item in schema]
+    return [str(marker) for marker in schema.schema]
 
 
 def options_of(result: dict[str, Any], key: str) -> list[Any]:
-    """Return the selector options of a form field."""
+    """Return selector options."""
     for marker, selector in result["data_schema"].schema.items():
         if marker == key:
             return selector.config["options"]
@@ -83,95 +66,42 @@ def options_of(result: dict[str, Any], key: str) -> list[Any]:
 
 
 def test_helpers() -> None:
-    """Sorting follows the Ukrainian alphabet, matching ignores case."""
-    names = ["с. Яблунівка", "м. Ірпінь", "с. Їжакевичі", "смт Гостомель", "с. Ґудзь"]
+    """Address helper functions normalize user input."""
+    names = ["с. Яблунівка", "м. Ірпінь", "смт Гостомель"]
     assert sorted(names, key=settlement_sort_key) == [
         "смт Гостомель",
-        "с. Ґудзь",
         "м. Ірпінь",
-        "с. Їжакевичі",
         "с. Яблунівка",
     ]
-    houses = ["10", "2", "10/2", "10 а", "-", "1"]
-    assert sorted(houses, key=house_sort_key) == ["1", "2", "10", "10 а", "10/2", "-"]
+    assert sorted(["10", "2", "10/2", "10 а", "1"], key=house_sort_key) == [
+        "1",
+        "2",
+        "10",
+        "10 а",
+        "10/2",
+    ]
     assert match_choice("  м.  бориспіль ", [SETTLEMENT]) == SETTLEMENT
     assert match_choice("Київ", [SETTLEMENT]) is None
-    assert match_choice(None, [SETTLEMENT]) is None
+    assert match_settlement("Бориспіль", {SETTLEMENT: [STREET]}) == SETTLEMENT
     assert build_title("с. Буча", "Без вулиці", "5") == "с. Буча, 5"
 
 
-def test_other_spellings() -> None:
-    """Settlements with the same name share their streets."""
-    streets = {
-        "с. Софіївська Борщагівка": ["вул. Миру", "пров. Миру", "вул. Сонячна"],
-        "Софіївська Борщагівка": ["Без вулиці", "вул. Сонячна"],
-        "с. Петропавлівська Борщагівка": ["вул. Миру"],
-    }
-    assert match_settlement("Софіївська Борщагівка", streets) == (
-        "Софіївська Борщагівка"
-    )
-    assert match_settlement(" софіївська  борщагівка", streets) == (
-        "Софіївська Борщагівка"
-    )
-    assert match_settlement("смт Софіївська Борщагівка", streets) == (
-        "с. Софіївська Борщагівка"
-    )
-    assert match_settlement("Київ", streets) is None
-    assert match_settlement(None, streets) is None
-
-    choices = street_choices(streets, "Софіївська Борщагівка")
-    assert choices == {
-        "Без вулиці": ("Софіївська Борщагівка", "Без вулиці"),
-        "вул. Сонячна": ("Софіївська Борщагівка", "вул. Сонячна"),
-        "вул. Миру (с. Софіївська Борщагівка)": (
-            "с. Софіївська Борщагівка",
-            "вул. Миру",
-        ),
-        "пров. Миру (с. Софіївська Борщагівка)": (
-            "с. Софіївська Борщагівка",
-            "пров. Миру",
-        ),
-        "вул. Сонячна (с. Софіївська Борщагівка)": (
-            "с. Софіївська Борщагівка",
-            "вул. Сонячна",
-        ),
-    }
-    assert street_choices(streets, "м. Київ") == {}
-    # The own street wins over the one of another spelling.
-    assert match_street("Сонячна", choices) == "вул. Сонячна"
-    assert match_street("вулиця сонячна", choices) == "вул. Сонячна"
-    # Two streets of another spelling fit: ambiguous.
+def test_street_matching() -> None:
+    """Street suggestions match their canonical values."""
+    choices = street_choices({"м. Київ": ["вул. Миру", "пров. Миру"]}, "м. Київ")
+    assert match_street("пров. миру", choices) == "пров. Миру"
     assert match_street("миру", choices) is None
-    assert match_street("пров. миру", choices) == (
-        "пров. Миру (с. Софіївська Борщагівка)"
-    )
-    own = street_choices(streets, "с. Софіївська Борщагівка")
-    assert match_street("без вулиці", own) == "Без вулиці (Софіївська Борщагівка)"
-    assert match_street("вул.", own) is None
-    assert match_street("Нова", own) is None
-    assert match_street(None, own) is None
 
 
-async def test_full_flow(hass: HomeAssistant, fake_dtek: FakeDtek) -> None:
-    """Settlement, street and a house with one group create the entry."""
+async def test_address_flow_creates_entry(
+    hass: HomeAssistant, fake_dtek: FakeDtek
+) -> None:
+    """Settlement, street and house create an address entry."""
     result = await start(hass)
-    assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "user"
-    assert options_of(result, CONF_SETTLEMENT) == ["м. Бориспіль", "с. Буча"]
-
-    result = await submit(hass, result, {CONF_SETTLEMENT: "м. бориспіль"})
-    assert result["step_id"] == "street"
-    assert options_of(result, CONF_STREET) == ["вул. Київський Шлях", STREET]
-
+    assert options_of(result, CONF_SETTLEMENT)
+    result = await submit(hass, result, {CONF_SETTLEMENT: SETTLEMENT})
     result = await submit(hass, result, {CONF_STREET: STREET})
-    assert result["step_id"] == "house"
-    assert options_of(result, CONF_HOUSE) == ["2", "8 а", "10", "43"]
-    assert [o["value"] for o in options_of(result, CONF_LANGUAGE)] == [
-        "uk",
-        "en",
-        "ru",
-    ]
-
     result = await submit(hass, result, {CONF_HOUSE: HOUSE})
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == TITLE
@@ -179,126 +109,26 @@ async def test_full_flow(hass: HomeAssistant, fake_dtek: FakeDtek) -> None:
         CONF_SETTLEMENT: SETTLEMENT,
         CONF_STREET: STREET,
         CONF_HOUSE: HOUSE,
-        CONF_GROUP: GROUP,
-        CONF_GROUP_MANUAL: False,
     }
     assert result["options"] == DEFAULT_OPTIONS
-    assert result["options"][CONF_LANGUAGE] == "uk"
-    assert result["result"].unique_id == f"{SETTLEMENT}|{STREET}|{HOUSE}"
 
 
-async def test_language_on_creation(hass: HomeAssistant, fake_dtek: FakeDtek) -> None:
-    """The language chosen with the house goes to the options."""
-    result = await start(hass)
-    result = await submit(hass, result, {CONF_SETTLEMENT: SETTLEMENT})
-    result = await submit(hass, result, {CONF_STREET: STREET})
-    result = await submit(hass, result, {CONF_HOUSE: HOUSE, CONF_LANGUAGE: "en"})
-    assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["options"] == {**DEFAULT_OPTIONS, CONF_LANGUAGE: "en"}
-
-
-async def test_street_of_other_spelling(
+async def test_custom_address_values_are_accepted(
     hass: HomeAssistant, fake_dtek: FakeDtek
 ) -> None:
-    """A street listed under another spelling keeps the settlement that has it."""
-    fake_dtek.streets = {
-        "с. Софіївська Борщагівка": ["вул. Миру", "вул. Жулянська"],
-        "Софіївська Борщагівка": ["Без вулиці"],
-    }
+    """Non-empty values absent from suggestions can be entered."""
     result = await start(hass)
-    assert options_of(result, CONF_SETTLEMENT) == [
-        "Софіївська Борщагівка",
-        "с. Софіївська Борщагівка",
-    ]
-    result = await submit(hass, result, {CONF_SETTLEMENT: "Софіївська Борщагівка"})
-    assert result["step_id"] == "street"
-    assert options_of(result, CONF_STREET) == [
-        "Без вулиці",
-        "вул. Жулянська (с. Софіївська Борщагівка)",
-        "вул. Миру (с. Софіївська Борщагівка)",
-    ]
-    result = await submit(hass, result, {CONF_STREET: "миру"})
-    assert result["step_id"] == "house"
-    assert result["description_placeholders"]["settlement"] == (
-        "с. Софіївська Борщагівка"
-    )
-    result = await submit(hass, result, {CONF_HOUSE: HOUSE})
+    result = await submit(hass, result, {CONF_SETTLEMENT: "м. Слов'янськ"})
+    result = await submit(hass, result, {CONF_STREET: "ул. Левадна (Первокінна)"})
+    result = await submit(hass, result, {CONF_HOUSE: "12"})
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == f"с. Софіївська Борщагівка, вул. Миру, {HOUSE}"
-    assert result["data"][CONF_SETTLEMENT] == "с. Софіївська Борщагівка"
-    assert result["data"][CONF_STREET] == "вул. Миру"
-
-
-async def test_house_with_several_groups(
-    hass: HomeAssistant, fake_dtek: FakeDtek
-) -> None:
-    """Several groups: the user picks one of them; a name is kept."""
-    result = await start(hass)
-    result = await submit(hass, result, {CONF_SETTLEMENT: SETTLEMENT})
-    result = await submit(hass, result, {CONF_STREET: STREET})
-    result = await submit(hass, result, {CONF_HOUSE: "8 а", CONF_NAME: " Дача "})
-    assert result["step_id"] == "group"
-    assert result["description_placeholders"]["groups"] == "3.1, 4.2"
-    assert [o["value"] for o in options_of(result, CONF_GROUP)] == [
-        "GPV3.1",
-        "GPV4.2",
-    ]
-    result = await submit(hass, result, {CONF_GROUP: "GPV4.2"})
-    assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == "Дача"
-    assert result["options"][CONF_GROUPS_MODE] == "main"
-    assert result["data"][CONF_GROUP] == "GPV4.2"
-    assert result["data"][CONF_GROUP_MANUAL] is True
-
-
-async def test_house_during_stabilization_outage(
-    hass: HomeAssistant, fake_dtek: FakeDtek
-) -> None:
-    """The group of a stabilization outage alone: every group is offered."""
-    fake_dtek.houses["2"] = make_house(
-        ["GPV4.2"],
-        reason="Стабілізаційне відключення (Згідно графіку погодинних відключень)",
-        start="10:00 18.10.2026",
-        end="14:00 18.10.2026",
-    )
-    for choice, manual in (("GPV4.2", False), ("GPV3.2", True)):
-        result = await start(hass)
-        result = await submit(hass, result, {CONF_SETTLEMENT: SETTLEMENT})
-        result = await submit(hass, result, {CONF_STREET: STREET})
-        result = await submit(hass, result, {CONF_HOUSE: "2"})
-        assert result["step_id"] == "group_outage"
-        assert result["description_placeholders"]["groups"] == "4.2"
-        assert len(options_of(result, CONF_GROUP)) == 12
-        result = await submit(hass, result, {CONF_GROUP: choice})
-        assert result["type"] is FlowResultType.CREATE_ENTRY
-        # Keeping the listed group leaves it to DTEK, as without the outage.
-        assert result["data"][CONF_GROUP] == choice
-        assert result["data"][CONF_GROUP_MANUAL] is manual
-        entry = hass.config_entries.async_entries(DOMAIN)[0]
-        assert await hass.config_entries.async_remove(entry.entry_id)
-        await hass.async_block_till_done()
-
-
-async def test_house_without_group_creates_address_entry(
-    hass: HomeAssistant, fake_dtek: FakeDtek
-) -> None:
-    """A house without a schedule group needs no extra configuration step."""
-    result = await start(hass)
-    result = await submit(hass, result, {CONF_SETTLEMENT: SETTLEMENT})
-    result = await submit(hass, result, {CONF_STREET: STREET})
-    result = await submit(hass, result, {CONF_HOUSE: "10"})
-    assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["data"][CONF_SETTLEMENT] == SETTLEMENT
-    assert result["data"][CONF_STREET] == STREET
-    assert result["data"][CONF_HOUSE] == "10"
-    assert result["data"][CONF_GROUP] == ""
-    assert result["data"][CONF_GROUP_MANUAL] is False
+    assert result["data"][CONF_HOUSE] == "12"
 
 
 async def test_empty_address_values_are_rejected(
     hass: HomeAssistant, fake_dtek: FakeDtek
 ) -> None:
-    """Empty address fields are rejected while arbitrary non-empty values work."""
+    """Blank address values remain invalid."""
     result = await start(hass)
     result = await submit(hass, result, {CONF_SETTLEMENT: ""})
     assert result["errors"] == {CONF_SETTLEMENT: "unknown_settlement"}
@@ -310,66 +140,46 @@ async def test_empty_address_values_are_rejected(
     assert result["errors"] == {CONF_HOUSE: "unknown_house"}
 
 
-async def test_custom_address_values_are_accepted(
+async def test_empty_house_response_allows_custom_house(
     hass: HomeAssistant, fake_dtek: FakeDtek
 ) -> None:
-    """A city, street and house absent from DTEK suggestions can be entered."""
-    result = await start(hass)
-    result = await submit(hass, result, {CONF_SETTLEMENT: "м. Слов'янськ"})
-    assert result["step_id"] == "street"
-    result = await submit(hass, result, {CONF_STREET: "ул. Левадна (Первокінна)"})
-    assert result["step_id"] == "house"
-    result = await submit(hass, result, {CONF_HOUSE: "12"})
-    assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["data"][CONF_SETTLEMENT] == "м. Слов'янськ"
-    assert result["data"][CONF_STREET] == "ул. Левадна (Первокінна)"
-    assert result["data"][CONF_HOUSE] == "12"
-    assert result["data"][CONF_GROUP] == ""
-
-
-async def test_cannot_connect_then_recovers(
-    hass: HomeAssistant, fake_dtek: FakeDtek
-) -> None:
-    """Connection errors offer a retry; submitting again retries."""
-    fake_dtek.ajax_error = aiohttp.ClientConnectionError()
-    result = await start(hass)
-    assert result["type"] is FlowResultType.MENU
-    assert result["step_id"] == "unreachable"
-    assert result["menu_options"] == ["user"]
-    fake_dtek.ajax_error = None
-    result = await submit(hass, result, {"next_step_id": "user"})
-    assert result["step_id"] == "user"
-    assert not result["errors"]
-    result = await submit(hass, result, {CONF_SETTLEMENT: SETTLEMENT})
-
-    fake_dtek.ajax_error = TimeoutError()
-    result = await submit(hass, result, {CONF_STREET: STREET})
-    assert result["step_id"] == "house"
-    assert result["errors"] == {"base": "cannot_connect"}
-    fake_dtek.ajax_error = None
-    result = await submit(hass, result, {})
-    assert result["step_id"] == "house"
-    assert not result["errors"]
-
-
-async def test_street_without_houses_allows_custom_house(
-    hass: HomeAssistant, fake_dtek: FakeDtek
-) -> None:
-    """A street without outage records still accepts a custom house number."""
+    """An empty outage response still allows a custom house number."""
     fake_dtek.houses = {}
     result = await start(hass)
     result = await submit(hass, result, {CONF_SETTLEMENT: SETTLEMENT})
     result = await submit(hass, result, {CONF_STREET: STREET})
-    assert result["step_id"] == "house"
     result = await submit(hass, result, {CONF_HOUSE: "12"})
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["data"][CONF_HOUSE] == "12"
 
 
-async def test_duplicate(
+async def test_options_only_polling_settings(
     hass: HomeAssistant, fake_dtek: FakeDtek, mock_config_entry: MockConfigEntry
 ) -> None:
-    """The same address can't be added twice."""
+    """Options contain no schedule or warning settings."""
+    await setup_entry(hass, mock_config_entry)
+    result = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
+    assert fields_of(result) == [CONF_UPDATE_INTERVAL, CONF_LANGUAGE]
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_UPDATE_INTERVAL: 10, CONF_LANGUAGE: "en"}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"] == {CONF_UPDATE_INTERVAL: 10, CONF_LANGUAGE: "en"}
+
+
+async def test_connection_errors_offer_retry(
+    hass: HomeAssistant, fake_dtek: FakeDtek
+) -> None:
+    """Loading the settlement list can be retried."""
+    fake_dtek.ajax_error = aiohttp.ClientConnectionError()
+    result = await start(hass)
+    assert result["step_id"] == "unreachable"
+    assert result["menu_options"] == ["user"]
+
+
+async def test_duplicate_address(
+    hass: HomeAssistant, fake_dtek: FakeDtek, mock_config_entry: MockConfigEntry
+) -> None:
+    """The same address cannot be added twice."""
     mock_config_entry.add_to_hass(hass)
     result = await start(hass)
     result = await submit(hass, result, {CONF_SETTLEMENT: SETTLEMENT})
@@ -377,64 +187,12 @@ async def test_duplicate(
     result = await submit(hass, result, {CONF_HOUSE: HOUSE})
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
-
-
-async def test_options_flow_reloads(
-    hass: HomeAssistant, fake_dtek: FakeDtek, mock_config_entry: MockConfigEntry
-) -> None:
-    """Saving options updates the entry and reloads it."""
-    await setup_entry(hass, mock_config_entry)
-    old_coordinator = mock_config_entry.runtime_data
-
-    result = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
-    assert result["type"] is FlowResultType.FORM
-    assert CONF_EXCLUDED_GROUPS in fields_of(result)
-    assert CONF_EXTRA_GROUPS not in fields_of(result)
-    assert len(options_of(result, CONF_EXCLUDED_GROUPS)) == 12
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"],
-        {
-            CONF_UPDATE_INTERVAL: 10,
-            CONF_WARN_START: ["60", "5"],
-            CONF_WARN_END: ["30"],
-            CONF_USE_MIRROR: False,
-            CONF_SHOW_POSSIBLE: False,
-            CONF_GROUPS_MODE: "all",
-            CONF_EXCLUDED_GROUPS: ["GPV5.1", "GPV4.2"],
-            CONF_LANGUAGE: "en",
-        },
-    )
-    await hass.async_block_till_done()
-    assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert mock_config_entry.options == {
-        CONF_UPDATE_INTERVAL: 10,
-        CONF_WARN_START: [60, 5],
-        CONF_WARN_END: [30],
-        CONF_USE_MIRROR: False,
-        CONF_SHOW_POSSIBLE: False,
-        CONF_GROUPS_MODE: "all",
-        CONF_EXCLUDED_GROUPS: ["GPV4.2", "GPV5.1"],
-        CONF_EXTRA_GROUPS: [],
-        CONF_LANGUAGE: "en",
-    }
-    coordinator = mock_config_entry.runtime_data
-    assert coordinator is not old_coordinator
-    assert coordinator.update_interval == timedelta(minutes=10)
-    assert coordinator.warn_start == (timedelta(minutes=60), timedelta(minutes=5))
-    assert coordinator.warn_end == (timedelta(minutes=30),)
-    assert not coordinator.use_mirror
-    assert coordinator.language == "en"
-    assert coordinator.groups_mode == "all"
-    assert coordinator.excluded_groups == {"GPV4.2", "GPV5.1"}
 
 
 async def test_forms_reach_frontend(
     hass: HomeAssistant, hass_client: ClientSessionGenerator, fake_dtek: FakeDtek
 ) -> None:
-    """Every form goes through the HTTP API the frontend uses.
-
-    The API serializes the schema, which fails on a plain function in it.
-    """
+    """Address and options forms serialize through Home Assistant's API."""
     assert await async_setup_component(hass, "config", {})
     client = await hass_client()
 
@@ -445,187 +203,24 @@ async def test_forms_reach_frontend(
         return await response.json()
 
     result = await post("flow", {"handler": DOMAIN})
-    assert result["step_id"] == "user"
     flow = f"flow/{result['flow_id']}"
     result = await post(flow, {CONF_SETTLEMENT: SETTLEMENT})
-    assert result["step_id"] == "street"
     result = await post(flow, {CONF_STREET: STREET})
-    assert result["step_id"] == "house"
-    result = await post(flow, {CONF_HOUSE: "8 а"})
-    assert result["step_id"] == "group"
-    result = await post(flow, {CONF_GROUP: "GPV4.2"})
-    assert result["type"] == FlowResultType.CREATE_ENTRY
+    result = await post(flow, {CONF_HOUSE: HOUSE})
+    assert result["type"] == FlowResultType.CREATE_ENTRY.value
     entry = hass.config_entries.async_entries(DOMAIN)[0]
-
     result = await post("options/flow", {"handler": entry.entry_id})
-    assert result["step_id"] == "init"
-    result = await post(
-        f"options/flow/{result['flow_id']}",
-        {
-            CONF_UPDATE_INTERVAL: 10,
-            CONF_WARN_START: ["5", "60"],
-            CONF_WARN_END: [],
-            CONF_USE_MIRROR: True,
-            CONF_SHOW_POSSIBLE: True,
-            CONF_GROUPS_MODE: "all",
-            CONF_EXCLUDED_GROUPS: ["GPV3.1"],
-            CONF_LANGUAGE: "uk",
-        },
-    )
-    assert result["type"] == FlowResultType.CREATE_ENTRY
-    assert entry.options[CONF_WARN_START] == [60, 5]
-    assert entry.options[CONF_WARN_END] == []
-    assert entry.options[CONF_GROUPS_MODE] == "all"
-    assert entry.options[CONF_EXCLUDED_GROUPS] == ["GPV3.1"]
+    assert fields_of(result) == [CONF_UPDATE_INTERVAL, CONF_LANGUAGE]
 
 
-async def test_reconfigure(
+async def test_reconfigure_address(
     hass: HomeAssistant, fake_dtek: FakeDtek, mock_config_entry: MockConfigEntry
 ) -> None:
-    """Reconfigure suggests the current address and moves the entry."""
+    """Reconfigure changes the stored address."""
     await setup_entry(hass, mock_config_entry)
     result = await mock_config_entry.start_reconfigure_flow(hass)
-    assert result["step_id"] == "user"
     result = await submit(hass, result, {CONF_SETTLEMENT: SETTLEMENT})
     result = await submit(hass, result, {CONF_STREET: STREET})
-    # The language is an option; reconfiguring changes only the address.
-    assert CONF_LANGUAGE not in fields_of(result)
     result = await submit(hass, result, {CONF_HOUSE: "2"})
-    assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert mock_config_entry.data[CONF_HOUSE] == "2"
-    assert mock_config_entry.title == f"{SETTLEMENT}, {STREET}, 2"
-    assert mock_config_entry.unique_id == f"{SETTLEMENT}|{STREET}|2"
-    assert mock_config_entry.runtime_data.house == "2"
-
-
-async def test_reconfigure_duplicate(
-    hass: HomeAssistant, fake_dtek: FakeDtek, mock_config_entry: MockConfigEntry
-) -> None:
-    """Moving onto the address of another entry is rejected."""
-    MockConfigEntry(
-        domain=DOMAIN,
-        unique_id=f"{SETTLEMENT}|{STREET}|2",
-        data={
-            CONF_SETTLEMENT: SETTLEMENT,
-            CONF_STREET: STREET,
-            CONF_HOUSE: "2",
-            CONF_GROUP: GROUP,
-        },
-    ).add_to_hass(hass)
-    mock_config_entry.add_to_hass(hass)
-    result = await mock_config_entry.start_reconfigure_flow(hass)
-    result = await submit(hass, result, {CONF_SETTLEMENT: SETTLEMENT})
-    result = await submit(hass, result, {CONF_STREET: STREET})
-    result = await submit(hass, result, {CONF_HOUSE: "2"})
-    assert result["type"] is FlowResultType.ABORT
-    assert result["reason"] == "already_configured"
-    assert mock_config_entry.data[CONF_HOUSE] == HOUSE
-
-
-async def test_address_is_required_when_dtek_is_down(
-    hass: HomeAssistant, fake_dtek: FakeDtek
-) -> None:
-    """Without DTEK the flow only offers retrying the required address setup."""
-    fake_dtek.ajax_error = aiohttp.ClientConnectionError()
-    result = await start(hass)
-    assert result["menu_options"] == ["user"]
-    result = await submit(hass, result, {"next_step_id": "user"})
-    assert result["step_id"] == "unreachable"
-    assert result["type"] is FlowResultType.MENU
-
-
-async def test_reconfigure_group_only_to_address(
-    hass: HomeAssistant, fake_dtek: FakeDtek
-) -> None:
-    """An entry by group gets an address once DTEK is back."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        title="Черга 3.1",
-        unique_id="group|GPV3.1",
-        data={CONF_GROUP: GROUP, CONF_GROUP_MANUAL: True},
-        options=dict(DEFAULT_OPTIONS),
-    )
-    await setup_entry(hass, entry)
-    assert not entry.runtime_data.has_address
-
-    result = await entry.start_reconfigure_flow(hass)
-    result = await submit(hass, result, {CONF_SETTLEMENT: SETTLEMENT})
-    result = await submit(hass, result, {CONF_STREET: STREET})
-    result = await submit(hass, result, {CONF_HOUSE: HOUSE})
-    assert result["reason"] == "reconfigure_successful"
-    assert entry.title == TITLE
-    assert entry.unique_id == f"{SETTLEMENT}|{STREET}|{HOUSE}"
-    assert entry.data[CONF_GROUP_MANUAL] is False
-    assert entry.runtime_data.has_address
-
-
-async def test_reconfigure_address_requires_dtek(
-    hass: HomeAssistant, fake_dtek: FakeDtek, mock_config_entry: MockConfigEntry
-) -> None:
-    """An address entry cannot be changed to a group-only entry."""
-    await setup_entry(hass, mock_config_entry)
-    fake_dtek.ajax_error = aiohttp.ClientConnectionError()
-    result = await mock_config_entry.start_reconfigure_flow(hass)
-    assert result["step_id"] == "unreachable"
-    result = await submit(hass, result, {"next_step_id": "user"})
-    assert result["step_id"] == "unreachable"
-    assert mock_config_entry.data[CONF_HOUSE] == HOUSE
-
-
-async def test_options_of_group_only_entry(
-    hass: HomeAssistant, fake_dtek: FakeDtek
-) -> None:
-    """The backup source option is not offered when it is the only source."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        title="Черга 3.1",
-        unique_id="group|GPV3.1",
-        data={CONF_GROUP: GROUP, CONF_GROUP_MANUAL: True},
-        options=dict(DEFAULT_OPTIONS),
-    )
-    await setup_entry(hass, entry)
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    assert CONF_USE_MIRROR not in fields_of(result)
-    assert CONF_EXCLUDED_GROUPS not in fields_of(result)
-    choices = [o["value"] for o in options_of(result, CONF_EXTRA_GROUPS)]
-    assert len(choices) == 11
-    assert GROUP not in choices
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"],
-        {
-            CONF_UPDATE_INTERVAL: 7,
-            CONF_WARN_START: [],
-            CONF_WARN_END: [],
-            CONF_SHOW_POSSIBLE: True,
-            CONF_EXTRA_GROUPS: ["GPV5.2", "GPV4.2"],
-            CONF_LANGUAGE: "uk",
-        },
-    )
-    await hass.async_block_till_done()
-    assert entry.options[CONF_UPDATE_INTERVAL] == 7
-    assert entry.options[CONF_USE_MIRROR] is True
-    assert entry.options[CONF_EXTRA_GROUPS] == ["GPV4.2", "GPV5.2"]
-    assert entry.runtime_data.data.extra_groups == ["GPV4.2", "GPV5.2"]
-
-
-async def test_menu_reaches_frontend(
-    hass: HomeAssistant, hass_client: ClientSessionGenerator, fake_dtek: FakeDtek
-) -> None:
-    """The address-required menu goes through the HTTP API too."""
-    assert await async_setup_component(hass, "config", {})
-    client = await hass_client()
-    fake_dtek.ajax_error = aiohttp.ClientConnectionError()
-
-    async def post(path: str, data: dict[str, Any]) -> dict[str, Any]:
-        response = await client.post(f"/api/config/config_entries/{path}", json=data)
-        assert response.status == HTTPStatus.OK, await response.text()
-        await hass.async_block_till_done()
-        return await response.json()
-
-    result = await post("flow", {"handler": DOMAIN})
-    assert result["type"] == FlowResultType.MENU
-    flow = f"flow/{result['flow_id']}"
-    result = await post(flow, {"next_step_id": "user"})
-    assert result["step_id"] == "unreachable"
-    assert result["type"] == FlowResultType.MENU

@@ -7,13 +7,7 @@ import asyncio
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.core import (
-    HomeAssistant,
-    ServiceCall,
-    ServiceResponse,
-    SupportsResponse,
-    callback,
-)
+from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.util import dt as dt_util
@@ -22,7 +16,6 @@ from .const import ATTR_CONFIG_ENTRY_ID, DOMAIN
 from .coordinator import DtekCoordinator
 
 SERVICE_REFRESH = "refresh"
-SERVICE_GET_SCHEDULE = "get_schedule"
 
 SERVICE_SCHEMA = vol.Schema({vol.Optional(ATTR_CONFIG_ENTRY_ID): cv.string})
 
@@ -75,21 +68,9 @@ async def _async_refresh(call: ServiceCall) -> None:
         )
 
 
-async def _async_get_schedule(call: ServiceCall) -> ServiceResponse:
-    coordinators = _get_coordinators(call.hass, call)
-    return {"entries": [c.schedule_dict() for c in coordinators]}
-
-
 @callback
 def async_setup_services(hass: HomeAssistant) -> None:
-    """Register the integration services."""
+    """Register the refresh service."""
     hass.services.async_register(
         DOMAIN, SERVICE_REFRESH, _async_refresh, schema=SERVICE_SCHEMA
-    )
-    hass.services.async_register(
-        DOMAIN,
-        SERVICE_GET_SCHEDULE,
-        _async_get_schedule,
-        schema=SERVICE_SCHEMA,
-        supports_response=SupportsResponse.ONLY,
     )

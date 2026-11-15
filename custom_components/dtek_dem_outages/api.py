@@ -1,22 +1,4 @@
-"""Async client for the outage data of DTEK DEM (https://www.dtek-dem.com.ua).
-
-Facts verified against the live site on 2026-11-15:
-
-* ``/ua/shutdowns`` is behind Imperva Incapsula, but the page's POST requests
-  to ``/ua/ajax`` are not challenged. The page uses this endpoint for its
-  address lookup and this client follows the same protocol.
-* ``/ua/ajax`` is a Yii2 action with CSRF validation. A POST without a token
-  answers HTTP 400 and sets the ``_csrf-dtek-dem`` cookie. Yii2 signs that
-  cookie but does not encrypt it: it holds the PHP-serialized token. A request
-  is accepted when the ``X-CSRF-Token`` header carries the masked token,
-  ``base64url(mask + (mask XOR token))``.
-* ``method=getStreets`` answers ``{"result": true, "streets": {settlement:
-  [street, ...]}}``. ``method=getHomeNum`` takes the same city/street pairs as
-  the website and returns address records in ``data``.
-* DTEK DEM currently does not publish ``fact`` or ``preset`` schedules. A
-  record with a non-empty ``sub_type`` means the address has an outage; an
-  empty/missing ``data`` record means the address currently has power.
-"""
+"""Async client for current emergency outages reported by DTEK DEM."""
 
 from __future__ import annotations
 
@@ -24,8 +6,7 @@ import asyncio
 import base64
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
-from datetime import date, datetime, tzinfo
-import logging
+from datetime import datetime, tzinfo
 import re
 import secrets
 from typing import Any
@@ -45,75 +26,63 @@ from .const import (
     API_TIMEOUT,
     CSRF_COOKIE,
     DOMAIN,
-    GROUPS,
-    MIRROR_URL,
     OUTAGE_KIND_EMERGENCY,
-    OUTAGE_KIND_OTHER,
-    OUTAGE_KIND_PLANNED,
-    OUTAGE_KIND_SEVERITY,
-    OUTAGE_KIND_STABILIZATION,
     PROJECT_URL,
     SITE_AJAX_PATH,
     SITE_BASE_URL,
     SITE_REFERER_PATH,
     TIMEZONE,
 )
-from .schedule import is_valid_slots, parse_hours
-
-_LOGGER = logging.getLogger(__name__)
 
 DATA_CLIENT: HassKey[DtekClient] = HassKey(f"{DOMAIN}_client")
-
-UPDATE_FORMAT = "%d.%m.%Y %H:%M"
 HOUSE_DATE_FORMAT = "%H:%M %d.%m.%Y"
-
 _CSRF_TOKEN_RE = re.compile(r'i:1;s:\d+:"([^"]+)"')
 _CHALLENGE_MARKER = "_Incapsula_Resource"
 
 
 class DtekError(Exception):
-    """Base error raised by the client."""
+    """Base error raised by the DTEK client."""
 
 
 class DtekConnectionError(DtekError):
-    """The server could not be reached."""
+    """The DTEK server could not be reached."""
 
 
 class DtekBlockedError(DtekConnectionError):
-    """The request got the anti-bot challenge instead of data."""
+    """DTEK returned its anti-bot challenge."""
 
 
 class DtekResponseError(DtekError):
-    """The server answered with an unexpected status or payload."""
+    """DTEK returned an invalid response."""
 
 
 class DtekNotFoundError(DtekError):
-    """The settlement or street is unknown to DTEK."""
+    """DTEK returned no current address record."""
 
 
 def build_user_agent(version: str | None = None) -> str:
-    """Return the User-Agent sent to DTEK, with the integration version."""
+    """Return the integration User-Agent."""
     product = f"ha-dtek-dem-outages/{version}" if version else "ha-dtek-dem-outages"
     return f"HomeAssistant/{ha_version} {product} (+{PROJECT_URL})"
 
 
 def extract_csrf_token(cookie_value: str) -> str | None:
-    """Return the raw token from a Yii2 CSRF cookie value."""
+    """Extract the raw Yii2 token from a CSRF cookie."""
     match = _CSRF_TOKEN_RE.search(unquote(cookie_value))
     return match.group(1) if match else None
 
 
 def mask_csrf_token(token: str, mask: bytes | None = None) -> str:
-    """Mask a token the way Yii2 ``Security::maskToken`` does."""
+    """Mask a token as Yii2 expects."""
     raw = token.encode()
-    if mask is None:
-        mask = secrets.token_bytes(len(raw))
-    masked = bytes(a ^ b for a, b in zip(mask, raw, strict=True))
-    return base64.urlsafe_b64encode(mask + masked).decode()
+    mask = mask or secrets.token_bytes(len(raw))
+    return base64.urlsafe_b64encode(
+        mask + bytes(a ^ b for a, b in zip(mask, raw, strict=True))
+    ).decode()
 
 
 def parse_local_datetime(value: Any, fmt: str, tz: tzinfo) -> datetime | None:
-    """Parse a DTEK local time string; empty or invalid values give None."""
+    """Parse a DTEK local datetime."""
     if not isinstance(value, str) or not value.strip():
         return None
     try:
@@ -123,69 +92,48 @@ def parse_local_datetime(value: Any, fmt: str, tz: tzinfo) -> datetime | None:
     return parsed.replace(tzinfo=tz)
 
 
-def parse_day(value: Any, tz: tzinfo) -> date | None:
-    """Parse a day key (Unix time of local midnight) into a local date."""
-    if isinstance(value, bool):
+def format_iso(value: datetime | None) -> str | None:
+    """Format a datetime as ISO, or return None."""
+    return value.isoformat() if value is not None else None
+
+
+def parse_iso(value: Any) -> datetime | None:
+    """Parse an ISO datetime saved in the Store."""
+    if not isinstance(value, str):
         return None
-    try:
-        timestamp = int(value)
-    except (TypeError, ValueError):
-        return None
-    try:
-        return datetime.fromtimestamp(timestamp, tz).date()
-    except (OverflowError, OSError, ValueError):
-        return None
+    return dt_util.parse_datetime(value)
 
 
 def classify_reason(reason: str) -> str:
-    """Return the kind of an outage from its DTEK description."""
+    """Classify an outage description."""
     text = reason.casefold()
-    if "стабіліз" in text:
-        return OUTAGE_KIND_STABILIZATION
-    if "аварій" in text or "екстрен" in text:
+    if "аварійн" in text or "екстрен" in text:
         return OUTAGE_KIND_EMERGENCY
-    if "план" in text:
-        return OUTAGE_KIND_PLANNED
-    return OUTAGE_KIND_OTHER
+    return "other"
 
 
 def _as_str(value: Any) -> str:
     return value.strip() if isinstance(value, str) else ""
 
 
-def format_iso(value: datetime | None) -> str | None:
-    """Return a datetime in ISO format, None for None."""
-    return value.isoformat() if value is not None else None
-
-
-def parse_iso(value: Any) -> datetime | None:
-    """Parse an ISO datetime saved by ``format_iso``; None if it is not one."""
-    if not isinstance(value, str):
-        return None
-    try:
-        return dt_util.parse_datetime(value)
-    except ValueError:
-        return None
-
-
 @dataclass(frozen=True, slots=True, kw_only=True)
 class AddressOutage:
-    """An outage DTEK reports for one address right now."""
+    """An emergency outage currently reported for an address."""
 
     reason: str
-    kind: str
+    kind: str = OUTAGE_KIND_EMERGENCY
     start: datetime | None = None
     end: datetime | None = None
     type: str = ""
 
     def is_active(self, now: datetime) -> bool:
-        """Return True while ``now`` is between start and end."""
+        """Return whether the outage is active at ``now``."""
         if self.start is not None and now < self.start:
             return False
         return self.end is None or now < self.end
 
     def as_dict(self) -> dict[str, Any]:
-        """Return a JSON serializable form."""
+        """Return a JSON-serializable outage."""
         return {
             "reason": self.reason,
             "kind": self.kind,
@@ -196,13 +144,14 @@ class AddressOutage:
 
     @classmethod
     def from_dict(cls, data: Any) -> AddressOutage | None:
-        """Restore an outage saved with ``as_dict``."""
-        if not isinstance(data, Mapping) or not _as_str(data.get("reason")):
+        """Restore an outage from the Store."""
+        if not isinstance(data, Mapping) or not (reason := _as_str(data.get("reason"))):
             return None
-        reason = _as_str(data.get("reason"))
+        if classify_reason(reason) != OUTAGE_KIND_EMERGENCY:
+            return None
         return cls(
             reason=reason,
-            kind=_as_str(data.get("kind")) or classify_reason(reason),
+            kind=OUTAGE_KIND_EMERGENCY,
             start=parse_iso(data.get("start")),
             end=parse_iso(data.get("end")),
             type=_as_str(data.get("type")),
@@ -210,74 +159,49 @@ class AddressOutage:
 
 
 def _parse_outage(raw: Mapping[str, Any], tz: tzinfo) -> AddressOutage | None:
-    """Return the outage of one ``getHomeNum`` record, None without a reason."""
-    if not (reason := _as_str(raw.get("sub_type"))):
+    """Parse an emergency outage record; ignore non-emergency records."""
+    reason = _as_str(raw.get("sub_type"))
+    if not reason or classify_reason(reason) != OUTAGE_KIND_EMERGENCY:
         return None
     return AddressOutage(
         reason=reason,
-        kind=classify_reason(reason),
         start=parse_local_datetime(raw.get("start_date"), HOUSE_DATE_FORMAT, tz),
         end=parse_local_datetime(raw.get("end_date"), HOUSE_DATE_FORMAT, tz),
         type=_as_str(raw.get("type")),
     )
 
 
-def _primary_outage(outages: list[AddressOutage]) -> AddressOutage | None:
-    """Return the most severe outage; the latest start wins a tie."""
-    return max(
-        outages,
-        key=lambda o: (
-            OUTAGE_KIND_SEVERITY.get(o.kind, 0),
-            o.start.timestamp() if o.start is not None else float("-inf"),
-        ),
-        default=None,
-    )
-
-
 @dataclass(frozen=True, slots=True, kw_only=True)
 class House:
-    """A house of a street with its groups and current outage."""
+    """A house record returned by DTEK."""
 
     number: str
-    groups: list[str] = field(default_factory=list)
     outage: AddressOutage | None = None
-    # DTEK says another operator serves the house (``cek``).
     external: bool = False
-    # A stabilization outage is reported: DTEK lists the group of that outage
-    # alone then, so other groups of the house may be missing from ``groups``.
-    groups_partial: bool = False
 
     @classmethod
     def from_api(cls, number: str, raw: Any, tz: tzinfo) -> House | None:
-        """Build a house from a ``getHomeNum`` item: one record or a list.
-
-        A list holds one record per outage; the groups of all of them count
-        and the most severe outage is the one reported. ``groups_partial``
-        looks at every record, whatever the page shows of the outage.
-        """
+        """Build a house from one or several DTEK records."""
         records = [raw] if isinstance(raw, Mapping) else raw
         if not isinstance(records, list):
             return None
-        records = [r for r in records if isinstance(r, Mapping)]
+        records = [record for record in records if isinstance(record, Mapping)]
         if not records:
             return None
-        groups: list[str] = []
-        for record in records:
-            reasons = record.get("sub_type_reason")
-            for group in reasons if isinstance(reasons, list) else []:
-                if group in GROUPS and group not in groups:
-                    groups.append(group)
-        outages = [o for r in records if (o := _parse_outage(r, tz)) is not None]
+        outages = [
+            outage
+            for record in records
+            if (outage := _parse_outage(record, tz)) is not None
+        ]
+        outage = outages[0] if outages else None
         return cls(
             number=number,
-            groups=groups,
-            outage=_primary_outage(outages),
-            external=any(bool(r.get("cek")) for r in records),
-            groups_partial=any(o.kind == OUTAGE_KIND_STABILIZATION for o in outages),
+            outage=outage,
+            external=any(bool(record.get("cek")) for record in records),
         )
 
 
-# Latin letters typed instead of the Cyrillic ones that look the same.
+# Latin letters typed instead of Cyrillic lookalikes.
 _HOUSE_LOOKALIKES = str.maketrans("aceiopxkmhtby", "асеіорхкмнтву")
 
 
@@ -286,184 +210,23 @@ def _house_key(number: str) -> str:
 
 
 def find_house(houses: Mapping[str, House], number: str) -> House | None:
-    """Return the house ``number``, tolerating case, spaces and Latin letters.
-
-    DTEK has written the same house as ``8а`` and ``8 а``; the exact key wins.
-    """
-    if (house := houses.get(number)) is not None:
+    """Find a house while tolerating spaces and Cyrillic lookalikes."""
+    if house := houses.get(number):
         return house
     wanted = _house_key(number)
     matches = [house for key, house in houses.items() if _house_key(key) == wanted]
     return matches[0] if len(matches) == 1 else None
 
 
-def _flag(value: Any) -> bool | None:
-    return value if isinstance(value, bool) else None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class Publication:
-    """What the DTEK page shows for a street; None means not known.
-
-    The flags come with every ``getHomeNum`` answer, the mirror has none.
-    """
-
-    schedule: bool | None = None  # showTableSchedule
-    daily: bool | None = None  # showTableFact
-    weekly: bool | None = None  # showTablePlan
-    current_outage: bool | None = None  # showCurOutageParam
-
-    @property
-    def daily_hidden(self) -> bool:
-        """Return True when DTEK hides the schedule for today and tomorrow."""
-        return self.schedule is False or self.daily is False
-
-    @classmethod
-    def from_api(cls, payload: Mapping[str, Any]) -> Publication:
-        """Read the ``show*`` flags of a ``getHomeNum`` answer."""
-        return cls(
-            schedule=_flag(payload.get("showTableSchedule")),
-            daily=_flag(payload.get("showTableFact")),
-            weekly=_flag(payload.get("showTablePlan")),
-            current_outage=_flag(payload.get("showCurOutageParam")),
-        )
-
-    def as_dict(self) -> dict[str, bool | None]:
-        """Return a JSON serializable form."""
-        return {
-            "schedule": self.schedule,
-            "daily": self.daily,
-            "weekly": self.weekly,
-            "current_outage": self.current_outage,
-        }
-
-    @classmethod
-    def from_dict(cls, data: Any) -> Publication:
-        """Restore flags saved with ``as_dict``."""
-        if not isinstance(data, Mapping):
-            return cls()
-        return cls(
-            schedule=_flag(data.get("schedule")),
-            daily=_flag(data.get("daily")),
-            weekly=_flag(data.get("weekly")),
-            current_outage=_flag(data.get("current_outage")),
-        )
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class Fact:
-    """The actual schedule of all groups for today and, once known, tomorrow."""
-
-    days: dict[date, dict[str, str]] = field(default_factory=dict)
-    update: str | None = None
-    updated_at: datetime | None = None
-    today: date | None = None
-
-    def for_group(self, group: str) -> dict[date, str]:
-        """Return the slots of one group by day."""
-        return {
-            day: groups[group] for day, groups in self.days.items() if group in groups
-        }
-
-    @classmethod
-    def from_api(cls, raw: Any, tz: tzinfo) -> Fact | None:
-        """Parse a ``fact`` object; None if it is not an object."""
-        if not isinstance(raw, Mapping):
-            return None
-        days: dict[date, dict[str, str]] = {}
-        data = raw.get("data")
-        if isinstance(data, Mapping):
-            for key, groups in data.items():
-                day = parse_day(key, tz)
-                if day is None or not isinstance(groups, Mapping):
-                    continue
-                parsed = {
-                    group: slots
-                    for group, hours in groups.items()
-                    if group in GROUPS and (slots := parse_hours(hours))
-                }
-                if parsed:
-                    days[day] = parsed
-        update = _as_str(raw.get("update")) or None
-        return cls(
-            days=days,
-            update=update,
-            updated_at=parse_local_datetime(update, UPDATE_FORMAT, tz),
-            today=parse_day(raw.get("today"), tz),
-        )
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class Preset:
-    """The weekly schedule of possible outages of all groups."""
-
-    groups: dict[str, dict[int, str]] = field(default_factory=dict)
-    update: str | None = None
-
-    def for_group(self, group: str) -> dict[int, str]:
-        """Return the slots of one group by ISO weekday."""
-        return dict(self.groups.get(group, {}))
-
-    @classmethod
-    def from_api(cls, raw: Any) -> Preset | None:
-        """Parse a ``preset`` object; None if it is not an object."""
-        if not isinstance(raw, Mapping):
-            return None
-        groups: dict[str, dict[int, str]] = {}
-        data = raw.get("data")
-        if isinstance(data, Mapping):
-            for group, weekdays in data.items():
-                if group not in GROUPS or not isinstance(weekdays, Mapping):
-                    continue
-                parsed: dict[int, str] = {}
-                for weekday, hours in weekdays.items():
-                    try:
-                        number = int(weekday)
-                    except (TypeError, ValueError):
-                        continue
-                    if 1 <= number <= 7 and (slots := parse_hours(hours)):
-                        parsed[number] = slots
-                if parsed:
-                    groups[group] = parsed
-        return cls(groups=groups, update=_as_str(raw.get("updateFact")) or None)
-
-
-def preset_from_dict(data: Any) -> dict[int, str]:
-    """Restore weekly slots saved as ``{"1": slots, ...}``."""
-    if not isinstance(data, Mapping):
-        return {}
-    result: dict[int, str] = {}
-    for weekday, slots in data.items():
-        try:
-            number = int(weekday)
-        except (TypeError, ValueError):
-            continue
-        if 1 <= number <= 7 and is_valid_slots(slots):
-            result[number] = slots
-    return result
-
-
 @dataclass(frozen=True, slots=True, kw_only=True)
 class StreetData:
-    """The ``getHomeNum`` answer for one street."""
+    """The current-address response for one street."""
 
     houses: dict[str, House] = field(default_factory=dict)
-    fact: Fact | None = None
-    preset: Preset | None = None
-    publication: Publication = field(default_factory=Publication)
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class MirrorData:
-    """The mirror copy of ``fact`` and ``preset``."""
-
-    fact: Fact | None = None
-    preset: Preset | None = None
-    updated_at: datetime | None = None
 
 
 def _form_pairs(pairs: Iterable[tuple[str, str]]) -> dict[str, str]:
-    """Encode name/value pairs like jQuery's ``serializeArray``."""
+    """Encode fields like jQuery's ``serializeArray``."""
     form: dict[str, str] = {}
     for index, (name, value) in enumerate(pairs):
         form[f"data[{index}][name]"] = name
@@ -472,7 +235,7 @@ def _form_pairs(pairs: Iterable[tuple[str, str]]) -> dict[str, str]:
 
 
 class DtekClient:
-    """Minimal async client for the DTEK DEM ajax endpoint and the mirror."""
+    """Async client for the DTEK DEM ajax endpoint."""
 
     def __init__(
         self,
@@ -480,72 +243,47 @@ class DtekClient:
         tz: tzinfo,
         *,
         base_url: str = SITE_BASE_URL,
-        mirror_url: str = MIRROR_URL,
         user_agent: str | None = None,
         session_factory: Callable[[], aiohttp.ClientSession] | None = None,
     ) -> None:
-        """Initialize the client.
-
-        ``session_factory`` makes a new session when the current one is closed.
-        """
+        """Initialize the client."""
         self._session = session
         self._session_factory = session_factory
         self.tz = tz
         self._base_url = base_url.rstrip("/")
-        self._mirror_url = mirror_url
         self._user_agent = user_agent or build_user_agent()
         self._csrf_token: str | None = None
         self._bootstrap_lock = asyncio.Lock()
-        # The mirror file parsed last time and its ETag, shared by all entries.
-        self._mirror: MirrorData | None = None
-        self._mirror_etag: str | None = None
 
     @property
     def _active_session(self) -> aiohttp.ClientSession:
-        """Return the session, replacing it when Home Assistant has closed it.
-
-        The client outlives sessions: it is cached in ``hass.data``, while a
-        closed session raises ``RuntimeError`` on every request. A new session
-        has an empty cookie jar, so the CSRF token is dropped with the old one.
-        """
+        """Return a live session, recreating it after Home Assistant closes it."""
         if self._session.closed and self._session_factory is not None:
             self._session = self._session_factory()
             self._csrf_token = None
         return self._session
 
     async def async_get_streets(self) -> dict[str, list[str]]:
-        """Return every settlement with its streets."""
+        """Return settlements and their streets."""
         payload = await self._async_ajax({"method": "getStreets"})
         streets = payload.get("streets")
         if not isinstance(streets, Mapping):
             raise DtekResponseError("Expected a streets object")
-        result: dict[str, list[str]] = {}
-        for settlement, names in streets.items():
-            if not isinstance(settlement, str) or not isinstance(names, list):
-                continue
-            result[settlement] = [name for name in names if isinstance(name, str)]
+        result = {
+            settlement: [name for name in names if isinstance(name, str)]
+            for settlement, names in streets.items()
+            if isinstance(settlement, str) and isinstance(names, list)
+        }
         if not result:
             raise DtekResponseError("Empty streets list")
         return result
 
-    async def async_get_street(
-        self, settlement: str, street: str, update_fact: str | None = None
-    ) -> StreetData:
-        """Return the houses of a street; ``fact`` and ``preset`` if newer.
-
-        ``update_fact`` is the last known ``fact.update``; an empty value
-        means "don't send the schedule". ``FORCE_UPDATE_FACT`` forces it.
-        """
+    async def async_get_street(self, settlement: str, street: str) -> StreetData:
+        """Return current emergency records for a street."""
         payload = await self._async_ajax(
             {
                 "method": "getHomeNum",
-                **_form_pairs(
-                    (
-                        ("city", settlement),
-                        ("street", street),
-                        ("updateFact", update_fact or ""),
-                    )
-                ),
+                **_form_pairs((("city", settlement), ("street", street))),
             }
         )
         houses: dict[str, House] = {}
@@ -556,61 +294,13 @@ class DtekClient:
                     house := House.from_api(number, raw, self.tz)
                 ):
                     houses[number] = house
-        return StreetData(
-            houses=houses,
-            fact=Fact.from_api(payload.get("fact"), self.tz),
-            preset=Preset.from_api(payload.get("preset")),
-            publication=Publication.from_api(payload),
-        )
-
-    async def async_get_mirror(self) -> MirrorData:
-        """Return ``fact`` and ``preset`` from the mirror.
-
-        The file is asked for with the ETag of the copy parsed last time: an
-        unchanged file is not downloaded again and that copy is returned.
-        """
-        headers = {"User-Agent": self._user_agent}
-        if self._mirror is not None and self._mirror_etag:
-            headers["If-None-Match"] = self._mirror_etag
-        try:
-            async with self._active_session.get(
-                self._mirror_url,
-                headers=headers,
-                timeout=aiohttp.ClientTimeout(total=API_TIMEOUT),
-            ) as response:
-                if response.status == 304 and self._mirror is not None:
-                    return self._mirror
-                if response.status != 200:
-                    raise DtekResponseError(
-                        f"Unexpected HTTP status {response.status} from the mirror"
-                    )
-                etag = response.headers.get("ETag")
-                text = await response.text()
-        except TimeoutError as err:
-            raise DtekConnectionError("Timeout while requesting the mirror") from err
-        except aiohttp.ClientError as err:
-            raise DtekConnectionError(f"Error requesting the mirror: {err}") from err
-        try:
-            payload = json_loads(text)
-        except ValueError as err:
-            raise DtekResponseError("Invalid JSON from the mirror") from err
-        if not isinstance(payload, Mapping):
-            raise DtekResponseError("Expected an object from the mirror")
-        self._mirror = MirrorData(
-            fact=Fact.from_api(payload.get("fact"), self.tz),
-            preset=Preset.from_api(payload.get("preset")),
-            updated_at=parse_iso(payload.get("lastUpdated")),
-        )
-        self._mirror_etag = etag
-        return self._mirror
+        return StreetData(houses=houses)
 
     async def _async_ajax(self, form: Mapping[str, str]) -> Mapping[str, Any]:
-        """POST to the ajax endpoint with a CSRF token; retry once on HTTP 400."""
+        """POST to DTEK with a Yii2 CSRF token."""
         token = await self._async_token()
         status, payload = await self._async_post(form, token)
         if status == 400:
-            # A rejected token usually comes back with a fresh cookie; if not,
-            # drop the cookie and ask for a new one.
             token = await self._async_token(stale=token)
             status, payload = await self._async_post(form, token)
         if status != 200:
@@ -622,17 +312,13 @@ class DtekClient:
         return payload
 
     async def _async_token(self, stale: str | None = None) -> str:
-        """Return the CSRF token, asking the server for one if needed.
-
-        ``stale`` is a token the server just rejected.
-        """
+        """Return a CSRF token, bootstrapping the DTEK cookie when needed."""
         async with self._bootstrap_lock:
-            session = self._active_session  # drops the token with a closed session
+            session = self._active_session
             if stale is not None and self._csrf_token == stale:
                 self._csrf_token = None
                 session.cookie_jar.clear(lambda cookie: cookie.key == CSRF_COOKIE)
             if self._csrf_token is None:
-                # Without a token the server answers 400 and sets the cookie.
                 await self._async_post({"method": "getHomeNum"}, None)
             if self._csrf_token is None:
                 raise DtekResponseError("DTEK did not issue a CSRF cookie")
@@ -641,7 +327,7 @@ class DtekClient:
     async def _async_post(
         self, form: Mapping[str, str], token: str | None
     ) -> tuple[int, Any]:
-        """POST a form; return the status and the parsed JSON (None if not 200)."""
+        """POST a form and return status plus decoded JSON."""
         headers = {
             "User-Agent": self._user_agent,
             "Accept": "application/json, text/javascript, */*; q=0.01",
@@ -679,28 +365,22 @@ class DtekClient:
 
 
 async def async_get_client(hass: HomeAssistant) -> DtekClient:
-    """Return the client shared by all entries and config flows.
-
-    It has its own session so the DTEK cookies stay out of the shared one.
-    The version in the User-Agent comes from manifest.json, its only source.
-    """
-    if (client := hass.data.get(DATA_CLIENT)) is not None:
+    """Return the client shared by config flows and entries."""
+    if client := hass.data.get(DATA_CLIENT):
         return client
     integration = await async_get_integration(hass, DOMAIN)
     tz = await dt_util.async_get_time_zone(TIMEZONE)
     if tz is None:
         raise DtekError(f"Time zone {TIMEZONE} is not available")
-    if (client := hass.data.get(DATA_CLIENT)) is not None:
-        return client
-    version = str(integration.version) if integration.version else None
 
     def create_session() -> aiohttp.ClientSession:
         return async_create_clientsession(hass, cookie_jar=aiohttp.CookieJar())
 
-    client = hass.data[DATA_CLIENT] = DtekClient(
+    client = DtekClient(
         create_session(),
         tz,
-        user_agent=build_user_agent(version),
+        user_agent=build_user_agent(str(integration.version)),
         session_factory=create_session,
     )
+    hass.data[DATA_CLIENT] = client
     return client

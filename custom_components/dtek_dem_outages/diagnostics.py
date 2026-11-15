@@ -1,11 +1,4 @@
-"""Diagnostics for DTEK DEM Outages.
-
-The street and house number are redacted; the settlement and group stay,
-since the schedule can't be understood without them. The state the
-coordinator keeps between updates (answers counted before a group is dropped
-or the main group moves, the past of the other groups) helps with the reports
-about groups.
-"""
+"""Diagnostics for DTEK DEM Outages."""
 
 from __future__ import annotations
 
@@ -23,8 +16,9 @@ TO_REDACT = {CONF_STREET, CONF_HOUSE, "street", "house", "entry_title", "title"}
 async def async_get_config_entry_diagnostics(
     hass: HomeAssistant, entry: DtekConfigEntry
 ) -> dict[str, Any]:
-    """Return diagnostics for a config entry."""
+    """Return diagnostics without exposing the street or house number."""
     coordinator = entry.runtime_data
+    data = coordinator.data
     return {
         "entry": async_redact_data(
             {
@@ -44,7 +38,26 @@ async def async_get_config_entry_diagnostics(
             else None,
             **coordinator.diagnostics_state(),
         },
-        "state": async_redact_data(coordinator.schedule_dict(), TO_REDACT)
-        if coordinator.data
-        else None,
+        "state": async_redact_data(
+            {
+                "street": coordinator.street,
+                "house": coordinator.house,
+                "address_ok": data.address_ok,
+                "fetch_ok": data.fetch_ok,
+                "connection": data.connection,
+                "consecutive_failures": data.consecutive_failures,
+                "external_operator": data.external_operator,
+                "last_success": data.last_success.isoformat()
+                if data.last_success
+                else None,
+                "last_dtek_success": data.last_dtek_success.isoformat()
+                if data.last_dtek_success
+                else None,
+                "last_error": data.last_error,
+                "address_outage": data.address_outage.as_dict()
+                if data.address_outage
+                else None,
+            },
+            TO_REDACT,
+        ),
     }

@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from typing import Any, Final
+from typing import Final
 
 DOMAIN: Final = "dtek_dem_outages"
 NAME: Final = "DTEK DEM Outages"
-
 ATTRIBUTION: Final = "Data provided by DTEK Donetsk Electric Networks"
 MANUFACTURER: Final = "DTEK DEM"
 CONFIGURATION_URL: Final = "https://www.dtek-dem.com.ua/ua/shutdowns"
@@ -17,271 +15,60 @@ SITE_BASE_URL: Final = "https://www.dtek-dem.com.ua"
 SITE_AJAX_PATH: Final = "/ua/ajax"
 SITE_REFERER_PATH: Final = "/ua/shutdowns"
 CSRF_COOKIE: Final = "_csrf-dtek-dem"
-# DTEK DEM does not publish daily or weekly schedules. The shared mirror
-# currently has no Donetsk file; keep this URL only for compatibility with
-# older entries and never use its Kyiv data for a DEM entry.
-MIRROR_URL: Final = (
-    "https://raw.githubusercontent.com/Baskerville42/outage-data-ua/main/data/dem.json"
-)
 API_TIMEOUT: Final = 20
-# Any ``updateFact`` that differs from the current version and is truthy in
-# PHP (not empty, not "0") makes DTEK include the schedule in its answer.
-FORCE_UPDATE_FACT: Final = "01.01.2000 00:00"
-
-# DTEK publishes local Ukrainian times without an offset.
 TIMEZONE: Final = "Europe/Kyiv"
-
-# Schedule groups ("черги") in UI order.
-GROUPS: Final = (
-    "GPV1.1",
-    "GPV1.2",
-    "GPV2.1",
-    "GPV2.2",
-    "GPV3.1",
-    "GPV3.2",
-    "GPV4.1",
-    "GPV4.2",
-    "GPV5.1",
-    "GPV5.2",
-    "GPV6.1",
-    "GPV6.2",
-)
 
 CONF_SETTLEMENT: Final = "settlement"
 CONF_STREET: Final = "street"
 CONF_HOUSE: Final = "house"
-CONF_GROUP: Final = "group"
-# True when the user picked the group because the address had none or several.
-CONF_GROUP_MANUAL: Final = "group_manual"
 CONF_UPDATE_INTERVAL: Final = "update_interval"
-# Minutes before an outage starts / ends to send a warning; both are lists.
-CONF_WARN_START: Final = "warn_before_start"
-CONF_WARN_END: Final = "warn_before_end"
-# Single number kept by entries created before the two lists above.
-CONF_WARNING_MINUTES: Final = "warning_minutes"
-CONF_USE_MIRROR: Final = "use_mirror"
-CONF_SHOW_POSSIBLE: Final = "show_possible"
-# Language of the entity names and calendar texts, independent of the language
-# of Home Assistant: it is often left English while people use Ukrainian.
 CONF_LANGUAGE: Final = "language"
-# The other groups of the address are followed besides the main one; this
-# option tells how they enter the schedule the entities show.
-CONF_GROUPS_MODE: Final = "groups_mode"
-# The main group alone; the other groups are in a calendar of their own.
-GROUPS_MODE_MAIN: Final = "main"
-# An outage of any group is an outage.
-GROUPS_MODE_ANY: Final = "any"
-# An outage of every group is an outage, of some of them a possible outage.
-GROUPS_MODE_ALL: Final = "all"
-GROUPS_MODES: Final = (GROUPS_MODE_MAIN, GROUPS_MODE_ANY, GROUPS_MODE_ALL)
-# Groups DTEK lists for the address that the entry leaves out.
-CONF_EXCLUDED_GROUPS: Final = "excluded_groups"
-# Groups followed besides the main one by an entry without an address.
-CONF_EXTRA_GROUPS: Final = "extra_groups"
 
 DEFAULT_UPDATE_INTERVAL: Final = 5
 MIN_UPDATE_INTERVAL: Final = 2
 MAX_UPDATE_INTERVAL: Final = 60
-# After failed requests the interval doubles, up to this many minutes (or the
-# configured interval if longer), with some jitter so entries spread out.
 RETRY_MAX_INTERVAL: Final = 15
 RETRY_JITTER: Final = 0.1
-DEFAULT_WARN_START: Final[tuple[int, ...]] = (30,)
-DEFAULT_WARN_END: Final[tuple[int, ...]] = ()
-# Minutes offered as checkboxes in the options.
-WARNING_CHOICES: Final[tuple[int, ...]] = (1, 5, 10, 15, 30, 60, 120)
-DEFAULT_USE_MIRROR: Final = True
-DEFAULT_SHOW_POSSIBLE: Final = True
-# Language code: name shown in the selector.
+
 LANGUAGES: Final[dict[str, str]] = {
     "uk": "Українська",
     "en": "English",
     "ru": "Русский",
 }
 DEFAULT_LANGUAGE: Final = "uk"
-DEFAULT_GROUPS_MODE: Final = GROUPS_MODE_MAIN
-
 DEFAULT_OPTIONS: Final[dict[str, object]] = {
     CONF_UPDATE_INTERVAL: DEFAULT_UPDATE_INTERVAL,
-    CONF_WARN_START: list(DEFAULT_WARN_START),
-    CONF_WARN_END: list(DEFAULT_WARN_END),
-    CONF_USE_MIRROR: DEFAULT_USE_MIRROR,
-    CONF_SHOW_POSSIBLE: DEFAULT_SHOW_POSSIBLE,
-    CONF_GROUPS_MODE: DEFAULT_GROUPS_MODE,
-    CONF_EXCLUDED_GROUPS: [],
-    CONF_EXTRA_GROUPS: [],
     CONF_LANGUAGE: DEFAULT_LANGUAGE,
 }
-
-# A group DTEK stops listing for the house is dropped after this many answers
-# in a row without it; a new group is taken at once. The main group never
-# moves by itself: after as many answers in a row listing other groups without
-# it, a Repairs issue offers to change it.
-GROUP_REMOVAL_UPDATES: Final = 3
-# Translation key of that issue; its ID is ``group_issue_id(entry_id)``.
-ISSUE_GROUP_NOT_LISTED: Final = "group_not_listed"
-# The ``refresh`` service asks again only this many seconds after the last
-# update, so an automation calling it often doesn't flood DTEK.
 REFRESH_COOLDOWN: Final = 60
 
-# Every event goes to the bus as EVENT_BUS with ``type`` set to one of these,
-# and to the event entity with the same event type.
 EVENT_BUS: Final = f"{DOMAIN}_event"
-EVENT_SCHEDULE_PUBLISHED: Final = "schedule_published"
-EVENT_SCHEDULE_CHANGED: Final = "schedule_changed"
-EVENT_OUTAGE_WARNING: Final = "outage_warning"
-EVENT_POSSIBLE_OUTAGE_WARNING: Final = "possible_outage_warning"
-EVENT_OUTAGE_END_WARNING: Final = "outage_end_warning"
-EVENT_OUTAGE_STARTED: Final = "outage_started"
-EVENT_OUTAGE_ENDED: Final = "outage_ended"
 EVENT_ADDRESS_OUTAGE: Final = "address_outage"
-EVENT_GROUP_CHANGED: Final = "group_changed"
-EVENT_GROUPS_CHANGED: Final = "groups_changed"
-EVENT_TYPES: Final = (
-    EVENT_SCHEDULE_PUBLISHED,
-    EVENT_SCHEDULE_CHANGED,
-    EVENT_OUTAGE_WARNING,
-    EVENT_POSSIBLE_OUTAGE_WARNING,
-    EVENT_OUTAGE_END_WARNING,
-    EVENT_OUTAGE_STARTED,
-    EVENT_OUTAGE_ENDED,
-    EVENT_ADDRESS_OUTAGE,
-    EVENT_GROUP_CHANGED,
-    EVENT_GROUPS_CHANGED,
-)
+EVENT_TYPES: Final = (EVENT_ADDRESS_OUTAGE,)
 
-# Kinds of the outage DTEK reports for an address, derived from its text.
-OUTAGE_KIND_STABILIZATION: Final = "stabilization"
 OUTAGE_KIND_EMERGENCY: Final = "emergency"
-OUTAGE_KIND_PLANNED: Final = "planned"
-OUTAGE_KIND_OTHER: Final = "other"
-# The outage reported when DTEK lists several for one house.
-OUTAGE_KIND_SEVERITY: Final[dict[str, int]] = {
-    OUTAGE_KIND_EMERGENCY: 3,
-    OUTAGE_KIND_STABILIZATION: 2,
-    OUTAGE_KIND_PLANNED: 1,
-    OUTAGE_KIND_OTHER: 0,
-}
-# State of the address status sensor without an outage.
 ADDRESS_STATUS_NONE: Final = "none"
-ADDRESS_STATUSES: Final = (
-    ADDRESS_STATUS_NONE,
-    OUTAGE_KIND_STABILIZATION,
-    OUTAGE_KIND_EMERGENCY,
-    OUTAGE_KIND_PLANNED,
-    OUTAGE_KIND_OTHER,
-)
-# State of the groups status sensor: which followed groups are off now.
-GROUPS_STATUS_NONE: Final = "none"
-GROUPS_STATUS_MAIN: Final = "main"
-GROUPS_STATUS_MAIN_SOME: Final = "main_some"
-GROUPS_STATUS_MAIN_ALL: Final = "main_all"
-GROUPS_STATUS_OTHERS_SOME: Final = "others_some"
-GROUPS_STATUS_OTHERS_ALL: Final = "others_all"
-# In order of the ``level`` attribute, 0 to 5, for charts that color by number.
-GROUPS_STATUSES: Final = (
-    GROUPS_STATUS_NONE,
-    GROUPS_STATUS_OTHERS_SOME,
-    GROUPS_STATUS_OTHERS_ALL,
-    GROUPS_STATUS_MAIN,
-    GROUPS_STATUS_MAIN_SOME,
-    GROUPS_STATUS_MAIN_ALL,
-)
-# ``power`` of a run of the groups status: what the schedule the entities
-# follow says for it, so it depends on ``groups_mode``.
-POWER_ON: Final = "on"
-POWER_OFF: Final = "off"
-POWER_MAYBE: Final = "maybe"
-# Entities that need an address; an entry set up by group only has none.
+ADDRESS_STATUSES: Final = (ADDRESS_STATUS_NONE, OUTAGE_KIND_EMERGENCY)
+
+CONNECTION_OK: Final = "ok"
+CONNECTION_OFFLINE: Final = "offline"
+CONNECTION_STATES: Final = (CONNECTION_OK, CONNECTION_OFFLINE)
+
 ADDRESS_ENTITIES: Final = (
     ("binary_sensor", "address_outage"),
     ("sensor", "address_status"),
     ("sensor", "restoration"),
 )
 
-SOURCE_DTEK: Final = "dtek"
-SOURCE_MIRROR: Final = "mirror"
-SOURCE_STORAGE: Final = "storage"
-
-# State of the connection sensor: what answered the last update.
-CONNECTION_OK: Final = "ok"
-CONNECTION_MIRROR: Final = "mirror"
-CONNECTION_OFFLINE: Final = "offline"
-CONNECTION_STATES: Final = (CONNECTION_OK, CONNECTION_MIRROR, CONNECTION_OFFLINE)
-# ``data_status`` attribute: the schedule was confirmed by the last update,
-# or entities work on what was stored before.
-DATA_CURRENT: Final = "current"
-DATA_STALE: Final = "stale"
-
 STORAGE_VERSION: Final = 1
-# The Store is written at most this often for routine updates.
-STORAGE_SAVE_DELAY: Final = 30
-# Past days kept for the calendar and the history of what was in effect.
-HISTORY_DAYS: Final = 7
-# Days ahead the calendar fills with the weekly schedule of possible outages.
-POSSIBLE_DAYS_AHEAD: Final = 7
-
 ATTR_CONFIG_ENTRY_ID: Final = "config_entry_id"
-
-# Calendar summaries are not covered by entity translations.
-CALENDAR_TEXT: Final[dict[str, dict[str, str]]] = {
-    "en": {
-        "outage": "Power outage",
-        "possible": "Possible outage",
-        "group": "Group",
-        "groups": "Groups",
-        "weekly": "Weekly schedule of possible outages",
-    },
-    "uk": {
-        "outage": "Відключення світла",
-        "possible": "Можливе відключення",
-        "group": "Черга",
-        "groups": "Черги",
-        "weekly": "Тижневий графік можливих відключень",
-    },
-    "ru": {
-        "outage": "Отключение света",
-        "possible": "Возможное отключение",
-        "group": "Очередь",
-        "groups": "Очереди",
-        "weekly": "Недельный график возможных отключений",
-    },
-}
-
-
-def group_name(group: str | None) -> str | None:
-    """Return the short group name used by people: ``GPV3.1`` -> ``3.1``."""
-    if group is None:
-        return None
-    return group.removeprefix("GPV")
 
 
 def signal_event(entry_id: str) -> str:
-    """Return the dispatcher signal used for the events of an entry."""
+    """Return the dispatcher signal used for one entry's events."""
     return f"{DOMAIN}_event_{entry_id}"
 
 
 def storage_key(entry_id: str) -> str:
-    """Return the Store key holding the schedule state of an entry."""
+    """Return the Store key for one entry."""
     return f"{DOMAIN}.{entry_id}"
-
-
-def group_issue_id(entry_id: str) -> str:
-    """Return the ID of the Repairs issue about the main group of an entry."""
-    return f"{ISSUE_GROUP_NOT_LISTED}_{entry_id}"
-
-
-def warning_thresholds(options: Mapping[str, Any], key: str) -> tuple[int, ...]:
-    """Return the warning minutes of an option, largest first.
-
-    Entries saved before the lists existed hold one number in
-    ``warning_minutes``, which stands for the "before start" list.
-    """
-    value = options.get(key)
-    if value is None:
-        legacy = options.get(CONF_WARNING_MINUTES) if key == CONF_WARN_START else None
-        if legacy is not None:
-            value = [legacy]
-        else:
-            value = DEFAULT_WARN_START if key == CONF_WARN_START else DEFAULT_WARN_END
-    return tuple(sorted({int(m) for m in value if int(m) > 0}, reverse=True))

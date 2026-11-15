@@ -3,86 +3,45 @@
     "step": {
       "user": {
         "title": "Settlement",
-        "description": "Current outage information from DTEK Donetsk Electric Networks. Choose your address the same way as on dtek-dem.com.ua; start typing to search.",
-        "data": {
-          "settlement": "Settlement"
-        },
-        "data_description": {
-          "settlement": "City, town or village. Enter it manually if DTEK does not list the place because there is no current outage."
-        }
+        "description": "Current emergency outage information from DTEK Donetsk Electric Networks.",
+        "data": {"settlement": "Settlement"},
+        "data_description": {"settlement": "City, town or village. You may enter it manually if DTEK does not list it."}
       },
       "street": {
         "title": "Street",
-        "description": "Streets of {settlement}.",
-        "data": {
-          "street": "Street"
-        },
-        "data_description": {
-          "street": "Enter or start typing the name, \"вул.\"/\"пров.\" can be left out. Streets DTEK lists under another spelling of the settlement (with or without \"с.\", \"смт\") have it in brackets. Villages without street names have \"Без вулиці\"."
-        }
+        "description": "Street in {settlement}.",
+        "data": {"street": "Street"},
+        "data_description": {"street": "You may enter the street manually if it is not listed."}
       },
       "house": {
         "title": "House",
-        "description": "Houses of {settlement}, {street}.",
+        "description": "House at {settlement}, {street}.",
         "data": {
           "house": "House number",
           "name": "Name",
           "language": "Language of entity names"
         },
         "data_description": {
-          "house": "Enter the house number manually if it is not listed by DTEK; examples: \"43\", \"8 а\" or \"1/2\".",
+          "house": "You may enter the house number manually if it is not listed.",
           "name": "Leave empty to use the address.",
-          "language": "Names of the entities and calendar events, whatever the language of Home Assistant. Entity IDs stay in English."
-        }
-      },
-      "group": {
-        "title": "Group",
-        "description": "DTEK does not name exactly one group for {settlement}, {street}, {house} (listed: {groups}). Choose the main group, the one whose schedule to follow; the DTEK website shows it after you enter the address. The other groups of the house are shown in the \"Other groups\" calendar and can be combined with the main one in the options.",
-        "data": {
-          "group": "Group"
-        }
-      },
-      "group_outage": {
-        "title": "Group",
-        "description": "DTEK reports a stabilization outage for {settlement}, {street}, {house}, and while it lasts DTEK lists only the group of that outage ({groups}): the house may have other groups too. Choose the main group, the one whose schedule to follow. If you are not sure, keep {groups}: the entry then follows the group DTEK lists, and the other groups of the house are followed once DTEK lists them again.",
-        "data": {
-          "group": "Group"
+          "language": "Language used for entity names."
         }
       },
       "unreachable": {
         "title": "DTEK is unavailable",
-        "description": "The list of settlements could not be loaded from DTEK. Try again later, or follow a group without an address: the schedule then comes from the public mirror github.com/Baskerville42/outage-data-ua, and the address data (group detection, outages at the address) is not available. The address can be added later with Reconfigure.",
-        "menu_options": {
-          "user": "Try again",
-          "group_only": "Follow a group without an address"
-        }
-      },
-      "group_only": {
-        "title": "Group without an address",
-        "description": "The schedule of the group comes from the public mirror of the DTEK data. Your group is shown on dtek-dem.com.ua after you enter the address.",
-        "data": {
-          "group": "Group",
-          "name": "Name",
-          "language": "Language of entity names"
-        },
-        "data_description": {
-          "group": "Your group (\"черга\"), e.g. 3.1.",
-          "name": "Leave empty to use \"Group 3.1\".",
-          "language": "Names of the entities and calendar events, whatever the language of Home Assistant. Entity IDs stay in English."
-        }
+        "description": "The settlement list could not be loaded from DTEK. Try again later.",
+        "menu_options": {"user": "Try again"}
       }
     },
     "error": {
       "cannot_connect": "Failed to connect to DTEK. Submit again to retry.",
       "unknown": "Unexpected error.",
-      "unknown_settlement": "Choose a settlement from the list.",
-      "unknown_street": "Choose a street from the list.",
-      "unknown_house": "Choose a house from the list.",
-      "no_houses": "DTEK lists no houses for this street. Submit again to retry."
+      "unknown_settlement": "Enter a settlement.",
+      "unknown_street": "Enter a street.",
+      "unknown_house": "Enter a house number."
     },
     "abort": {
       "already_configured": "This address is already configured.",
-      "group_configured": "An entry for this group without an address is already configured.",
       "reconfigure_successful": "Re-configuration was successful."
     }
   },
@@ -92,198 +51,55 @@
         "title": "DTEK DEM Outages options",
         "data": {
           "update_interval": "Update interval",
-          "warn_before_start": "Warn before an outage starts",
-          "warn_before_end": "Warn before an outage ends (power returns)",
-          "use_mirror": "Use the backup source",
-          "show_possible": "Show possible outages in the calendar",
-          "groups_mode": "Other groups of the address in the schedule",
-          "excluded_groups": "Leave out groups",
-          "extra_groups": "Other groups",
           "language": "Language of entity names"
         },
         "data_description": {
           "update_interval": "Minutes between requests to DTEK (at least 2).",
-          "warn_before_start": "Tick how long before a scheduled outage to send the \"outage_warning\" event, and before a possible outage \"possible_outage_warning\". Nothing ticked turns it off.",
-          "warn_before_end": "Tick how long before a scheduled outage ends to send the \"outage_end_warning\" event. Nothing ticked turns it off.",
-          "use_mirror": "When DTEK can't be reached, take the schedule from the public mirror github.com/Baskerville42/outage-data-ua.",
-          "show_possible": "Fill days without an actual schedule with the weekly schedule of possible outages, while DTEK shows that schedule on its website.",
-          "groups_mode": "What the sensors, events, warnings and the \"Outages\" calendar follow when DTEK lists several groups for the house. What already happened is not rewritten.",
-          "excluded_groups": "Groups DTEK lists for the house that are not followed, e.g. when you know your entrance is on the main group.",
-          "extra_groups": "Groups followed besides the main one; their schedule comes from the mirror too.",
-          "language": "Names of the entities and calendar events, whatever the language of Home Assistant. Entity IDs stay in English."
+          "language": "Language used for entity names."
         }
-      }
-    }
-  },
-  "selector": {
-    "warning_minutes": {
-      "options": {
-        "1": "1 min",
-        "5": "5 min",
-        "10": "10 min",
-        "15": "15 min",
-        "30": "30 min",
-        "60": "60 min",
-        "120": "120 min"
-      }
-    },
-    "groups_mode": {
-      "options": {
-        "main": "Main group only (the others are in the \"Other groups\" calendar)",
-        "any": "Outage when any group is off",
-        "all": "Outage when all groups are off, possible outage when some are"
       }
     }
   },
   "entity": {
     "binary_sensor": {
-      "address_outage": {
-        "name": "Address outage"
-      },
-      "scheduled_outage": {
-        "name": "Scheduled outage"
-      }
-    },
-    "calendar": {
-      "outages": {
-        "name": "Outages"
-      },
-      "other_groups": {
-        "name": "Other groups"
-      }
+      "address_outage": {"name": "Emergency outage"}
     },
     "event": {
       "events": {
-        "name": "Outage events",
+        "name": "Emergency outage events",
         "state_attributes": {
-          "event_type": {
-            "state": {
-              "schedule_published": "Schedule published",
-              "schedule_changed": "Schedule changed",
-              "outage_warning": "Outage warning",
-              "possible_outage_warning": "Possible outage warning",
-              "outage_end_warning": "Outage ending soon",
-              "outage_started": "Outage started",
-              "outage_ended": "Outage ended",
-              "address_outage": "Outage at address",
-              "group_changed": "Group changed",
-              "groups_changed": "Groups of the address changed"
-            }
-          }
+          "event_type": {"state": {"address_outage": "Emergency outage"}}
         }
       }
     },
     "sensor": {
       "address_status": {
         "name": "Address status",
-        "state": {
-          "none": "No outage",
-          "stabilization": "Stabilization outage",
-          "emergency": "Emergency outage",
-          "planned": "Planned works",
-          "other": "Other outage"
-        }
+        "state": {"none": "No emergency outage", "emergency": "Emergency outage"}
       },
       "connection": {
         "name": "DTEK connection",
-        "state": {
-          "ok": "OK",
-          "mirror": "Backup source",
-          "offline": "Offline, stored data"
-        }
+        "state": {"ok": "OK", "offline": "Offline"}
       },
-      "group": {
-        "name": "Group"
-      },
-      "groups_status": {
-        "name": "Groups status",
-        "state": {
-          "none": "No outage",
-          "main": "Main group only",
-          "main_some": "Main and some other groups",
-          "main_all": "Main and all other groups",
-          "others_some": "Some other groups only",
-          "others_all": "All other groups only"
-        }
-      },
-      "last_update": {
-        "name": "Last update"
-      },
-      "next_outage": {
-        "name": "Next outage"
-      },
-      "outage_end": {
-        "name": "Outage end"
-      },
-      "outages_today": {
-        "name": "Outages today"
-      },
-      "outages_tomorrow": {
-        "name": "Outages tomorrow"
-      },
-      "restoration": {
-        "name": "Estimated restoration"
-      },
-      "schedule_updated": {
-        "name": "Schedule updated"
-      }
+      "last_update": {"name": "Last update"},
+      "restoration": {"name": "Estimated restoration"}
     }
   },
   "exceptions": {
-    "update_failed": {
-      "message": "Error fetching the outage schedule: {error}"
-    },
-    "entry_not_found": {
-      "message": "No DTEK DEM Outages entry with ID {entry_id}."
-    },
-    "entry_not_loaded": {
-      "message": "DTEK DEM Outages entry {entry_id} is not loaded."
-    },
-    "no_loaded_entries": {
-      "message": "No DTEK DEM Outages entries are loaded."
-    },
-    "refresh_failed": {
-      "message": "Updating failed for: {entries}."
-    }
-  },
-  "issues": {
-    "group_not_listed": {
-      "title": "DTEK lists other groups for {title}",
-      "fix_flow": {
-        "step": {
-          "change": {
-            "title": "Main group of {title}",
-            "description": "For {title}, DTEK has listed {groups} without the main group of the entry, {group}, in several answers in a row. If DTEK moved the house, choose the group to follow: the past schedule stays as it was, and the schedule of the new group is fetched at once. To keep {group}, close this window; the repair can be ignored, and it goes away by itself once DTEK lists {group} again.",
-            "data": {
-              "group": "Main group"
-            }
-          }
-        },
-        "abort": {
-          "entry_not_loaded": "The entry is not loaded. Try again once it is.",
-          "group_listed": "DTEK lists the main group again: nothing to change."
-        }
-      }
-    }
+    "update_failed": {"message": "Error fetching the current emergency outage: {error}"},
+    "entry_not_found": {"message": "No DTEK DEM Outages entry with ID {entry_id}."},
+    "entry_not_loaded": {"message": "DTEK DEM Outages entry {entry_id} is not loaded."},
+    "no_loaded_entries": {"message": "No DTEK DEM Outages entries are loaded."},
+    "refresh_failed": {"message": "Updating failed for: {entries}."}
   },
   "services": {
     "refresh": {
       "name": "Refresh",
-      "description": "Fetches the schedule and the address status now. An entry updated less than a minute ago keeps the result of that update.",
+      "description": "Fetches the current emergency outage status.",
       "fields": {
         "config_entry_id": {
           "name": "Entry",
           "description": "Entry to refresh. Leave empty to refresh all entries."
-        }
-      }
-    },
-    "get_schedule": {
-      "name": "Get schedule",
-      "description": "Returns the stored schedule by day, the weekly schedule of possible outages and the outage reported for the address.",
-      "fields": {
-        "config_entry_id": {
-          "name": "Entry",
-          "description": "Entry to read. Leave empty to return all entries."
         }
       }
     }
